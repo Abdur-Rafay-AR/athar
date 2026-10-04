@@ -3,11 +3,15 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sqlite3
 import json
+import os
 from typing import List, Dict, Any
 
 app = FastAPI(title="Agent Tracer UI API")
 
-app.mount("/static", StaticFiles(directory="agent_tracer/ui/static"), name="static")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
 
 
 def get_db():
