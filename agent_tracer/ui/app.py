@@ -48,3 +48,11 @@ def replay_from_node(node_id: str, new_state: Dict[str, Any]):
     # 3. Create a branch
     # 4. Invoke agent via subprocess or RPC with new state
     return {"status": "success", "message": f"Replaying from node {node_id} with mutated state."}
+
+def main():
+    import uvicorn
+    print("Starting Agent Tracer UI on http://localhost:4173/static/index.html")
+    uvicorn.run(app, host="127.0.0.1", port=4173)
+
+if __name__ == "__main__":
+    main()
