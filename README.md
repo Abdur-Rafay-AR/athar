@@ -1,4 +1,4 @@
-# Agent Tracer 🕵️‍♂️🔍
+# Agent Tracer
 
 ![Version](https://img.shields.io/badge/version-v0.1.0-blue.svg)
 ![Python](https://img.shields.io/badge/python-3.9%2B-blue.svg)
@@ -13,7 +13,7 @@ No account. No cloud. No vendor lock-in. SQLite on disk, a local web UI, done.
 
 ***
 
-## 🚀 The Problem
+## The Problem
 
 If you've built anything beyond a single-agent toy, you've hit this: an agent does something wrong four steps into a run, and your only tools to figure out why are `print()` statements and re-running the whole thing from scratch, hoping it fails the same way twice (it often doesn't, because LLMs aren't deterministic).
 
@@ -21,7 +21,7 @@ Existing observability tools solve *logging* (you can see what happened). None o
 
 Agent Tracer is built around one core mechanic that doesn't really exist elsewhere in an accessible form: **fork and replay**.
 
-## 🛠️ Core Mechanic: Fork and Replay
+## Core Mechanic: Fork and Replay
 
 1. Every agent run is recorded as a trace: a tree of steps (LLM calls, tool calls, tool results, state mutations), each with full input/output and a content hash.
 2. Open any trace in the UI and scrub through it like a video timeline.
@@ -31,13 +31,39 @@ Agent Tracer is built around one core mechanic that doesn't really exist elsewhe
 
 This turns debugging a bad agent decision from "re-run the whole pipeline and hope" into "fix the one thing you think is wrong and see what happens next", similar to the mental model of `git rebase -i` or a real debugger's "set next statement."
 
-## 🏗️ Architecture
+## Architecture
 
-![Architecture Diagram](assets/architecture.png)
+```text
++---------------------------------------------------------+
+|                      Your Agent Code                    |
+|         (Crucible, LangChain, AutoGen, raw loop...)     |
++---------------------------+-----------------------------+
+                            | instrumentation (decorator / context manager)
++---------------------------v-----------------------------+
+|                      Tracer SDK (Python)                |
+|   - captures LLM calls, tool calls, state snapshots     |
+|   - content-hashes each step for dedup/caching          |
+|   - async, non-blocking write path                      |
++---------------------------+-----------------------------+
+                            |
++---------------------------v-----------------------------+
+|              Local Trace Store (SQLite + WAL)           |
+|   trace_id -> tree of steps, each with:                 |
+|   input, output, timestamp, cost, parent_step_id        |
++---------------------------+-----------------------------+
+                            |
++---------------------------v-----------------------------+
+|                  Local Web UI (FastAPI + React)         |
+|   - timeline scrubber per trace                         |
+|   - step inspector (full I/O, diff view between branches|
+|   - fork-and-replay controls                            |
+|   - cost/latency breakdown per step and per branch      |
++---------------------------------------------------------+
+```
 
 Replay execution re-invokes your actual agent/tool code starting at the fork point. Agent Tracer doesn't simulate anything; it calls your real functions with the edited state, so behavior after the fork is exactly as real as the original run.
 
-## ✨ Key Features (v0.1 Release)
+## Key Features (v0.1 Release)
 
 - **Zero-config instrumentation**: one decorator (`@traced`) or context manager around your agent loop; no changes to agent logic required.
 - **Framework-agnostic capture**: works with raw Python agent loops, LangChain, AutoGen, and Crucible out of the box via thin adapters.
@@ -46,12 +72,12 @@ Replay execution re-invokes your actual agent/tool code starting at the fork poi
 - **Cost and latency breakdown**: per-step and per-branch, so you can see exactly which step in a 20-step trace is expensive or slow.
 - **Local-first**: SQLite trace store, no external service, no API key required to use the core tool.
 
-## 💻 Quickstart
+## Quickstart
 
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/agent-tracer.git
+git clone https://github.com/Abdur-Rafay-AR/agent-tracer.git
 cd agent-tracer
 pip install -e .
 ```
@@ -89,17 +115,17 @@ agent-tracer
 ```
 Then open `http://localhost:4173/static/index.html` in your browser.
 
-## 🗺️ Roadmap
+## Roadmap
 
 - [x] **v0.1**: SDK with decorator-based capture + SQLite store, local web UI timeline view, fork/replay basics.
 - [ ] **v0.2**: Enhanced branch diffing + cost/latency breakdown visualizers.
 - [ ] **v0.3**: Deep Crucible adapter, LangChain adapter integrations.
 - [ ] **v1.0**: Stable SDK API, documented extension points for custom adapters.
 
-## 🤝 Why this exists
+## Why this exists
 
 Built as the debugging layer I wanted while working on Crucible. Multi-agent systems are hard enough to reason about when everything works; they're nearly impossible to debug with print statements when something goes wrong three agents deep. This is the tool I kept wishing existed.
 
-## 📄 License
+## License
 
 MIT
