@@ -21,3 +21,7 @@ classifiers = [
 
 [project.scripts]
 agent-tracer = "agent_tracer.ui.app:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
