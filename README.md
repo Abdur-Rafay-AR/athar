@@ -6,6 +6,7 @@
   
   **A local-first, time-travel debugger and observability engine for multi-agent LLM systems.**
 
+  [![PyPI version](https://img.shields.io/pypi/v/athar.svg?color=00D6A3)](https://pypi.org/project/athar/)
   [![Tests](https://img.shields.io/badge/tests-21%20passed-00D6A3.svg)](tests/)
   [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-00D6A3.svg)](LICENSE)
@@ -55,10 +56,16 @@ When an agent goes off track:
 
 ### 1. Installation
 
+Install via PyPI:
+```bash
+pip install athar
+```
+
+Or install from source for development:
 ```bash
 git clone https://github.com/Abdur-Rafay-AR/athar.git
 cd athar
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ### 2. Instrument Your Code
