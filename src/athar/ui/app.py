@@ -9,6 +9,7 @@ from typing import List, Dict, Any, Optional
 from ..storage.sqlite_store import TraceStore
 from ..core.replayer import execute_replay
 from ..core.registry import get_registry
+from ..core.diff import compare_branches
 
 app = FastAPI(
     title="Athar UI & API",
@@ -67,6 +68,20 @@ def get_trace_nodes(trace_id: str):
     store = get_store()
     nodes = store.get_nodes(trace_id)
     return {"trace_id": trace_id, "nodes": nodes, "count": len(nodes)}
+
+@app.get("/api/traces/{trace_id}/diff")
+def get_trace_diff(trace_id: str, branch_a: str = Query("main"), branch_b: str = Query(...)):
+    """
+    Computes a structured diff between two execution branches in a trace.
+    Returns fork points, delta cost, delta latency, and unified output diffs.
+    """
+    store = get_store()
+    try:
+        return compare_branches(store, trace_id, branch_a=branch_a, branch_b=branch_b)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/traces")
 def create_trace(payload: CreateTraceRequest):

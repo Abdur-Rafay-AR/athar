@@ -431,6 +431,9 @@
         </div>
 
         <div class="header-actions">
+            <button class="btn btn-secondary" id="compare-branches-btn" onclick="openDiffModal()" style="display:none; border-color:#9D72FF; color:#C4A1FF;">
+                <span>🌿</span> Compare Branches
+            </button>
             <button class="btn btn-secondary" onclick="seedSampleTrace()">
                 <span>⚡</span> Seed Sample Trace
             </button>
@@ -583,6 +586,13 @@
                 document.getElementById('stat-steps').textContent = currentNodes.length;
                 document.getElementById('stat-latency').textContent = `${totalLat.toFixed(2)}s`;
                 document.getElementById('stat-cost').textContent = `$${totalCost.toFixed(4)}`;
+
+                // Check for multiple branches
+                const branchSet = new Set(currentNodes.map(n => n.branch_id || 'main'));
+                const diffBtn = document.getElementById('compare-branches-btn');
+                if (diffBtn) {
+                    diffBtn.style.display = branchSet.size > 1 ? 'inline-flex' : 'none';
+                }
 
                 renderNodes(currentNodes);
             } catch (err) {
@@ -763,7 +773,137 @@
                 .replace(/'/g, '&#039;');
         }
 
+        function openDiffModal() {
+            const branchSet = Array.from(new Set(currentNodes.map(n => n.branch_id || 'main')));
+            const selA = document.getElementById('diff-branch-a');
+            const selB = document.getElementById('diff-branch-b');
+            selA.innerHTML = '';
+            selB.innerHTML = '';
+
+            branchSet.forEach(b => {
+                const optA = document.createElement('option');
+                optA.value = b;
+                optA.textContent = b;
+                selA.appendChild(optA);
+
+                const optB = document.createElement('option');
+                optB.value = b;
+                optB.textContent = b;
+                selB.appendChild(optB);
+            });
+
+            if (branchSet.length > 1) {
+                selA.value = branchSet[0];
+                selB.value = branchSet[1];
+            }
+
+            document.getElementById('diff-modal-overlay').style.display = 'flex';
+            runBranchDiff();
+        }
+
+        function closeDiffModal() {
+            document.getElementById('diff-modal-overlay').style.display = 'none';
+        }
+
+        async function runBranchDiff() {
+            const selA = document.getElementById('diff-branch-a').value;
+            const selB = document.getElementById('diff-branch-b').value;
+            if (!currentTraceId || !selA || !selB) return;
+
+            const contentArea = document.getElementById('diff-results-content');
+            contentArea.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">Calculating branch delta...</div>';
+
+            try {
+                const res = await fetch(`/api/traces/${currentTraceId}/diff?branch_a=${encodeURIComponent(selA)}&branch_b=${encodeURIComponent(selB)}`);
+                const data = await res.json();
+                if (!res.ok) {
+                    contentArea.innerHTML = `<div style="padding:20px; color:#ff5e7e;">Error: ${escapeHtml(data.detail)}</div>`;
+                    return;
+                }
+
+                const summary = data.summary;
+                const latDelta = summary.delta_latency;
+                const costDelta = summary.delta_cost;
+
+                const latColor = latDelta <= 0 ? '#00D6A3' : '#ff9f43';
+                const latSign = latDelta > 0 ? '+' : '';
+                const costColor = costDelta <= 0 ? '#00D6A3' : '#ff5e7e';
+                const costSign = costDelta > 0 ? '+' : '';
+
+                let stepsHtml = '';
+                data.step_diffs.forEach(sd => {
+                    const diffText = sd.output_diff || (sd.is_identical ? '(Outputs are identical)' : 'No common output');
+                    const diffColor = sd.is_identical ? '#8CA3A3' : '#00D6A3';
+
+                    stepsHtml += `
+                        <div style="background:#090e13; border:1px solid var(--border-subtle); border-radius:8px; padding:12px; margin-bottom:12px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; font-weight:600;">
+                                <span>Step #${sd.index}: ${escapeHtml(sd.step_a ? sd.step_a.func_name : '')} vs ${escapeHtml(sd.step_b ? sd.step_b.func_name : '')}</span>
+                                <span style="font-size:11px; color:${diffColor}">${sd.is_identical ? 'Identical' : 'Divergent'}</span>
+                            </div>
+                            <pre class="code-block" style="max-height:140px; margin:0;">${escapeHtml(diffText)}</pre>
+                        </div>
+                    `;
+                });
+
+                contentArea.innerHTML = `
+                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
+                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                            <div class="stat-label">Δ Latency</div>
+                            <div style="font-size:18px; font-weight:700; color:${latColor}">${latSign}${latDelta.toFixed(3)}s</div>
+                        </div>
+                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                            <div class="stat-label">Δ Cost</div>
+                            <div style="font-size:18px; font-weight:700; color:${costColor}">${costSign}$${costDelta.toFixed(4)}</div>
+                        </div>
+                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                            <div class="stat-label">Steps (A / B)</div>
+                            <div style="font-size:18px; font-weight:700; color:#F4F7FA;">${summary.steps_branch_a} / ${summary.steps_branch_b}</div>
+                        </div>
+                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                            <div class="stat-label">Fork Point</div>
+                            <div style="font-size:14px; font-weight:600; color:#00D6A3; font-family:'JetBrains Mono';">${summary.fork_point ? escapeHtml(summary.fork_point.func_name) : 'Root / Direct'}</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="inspector-section-title">Step-by-Step Output Diff</div>
+                        ${stepsHtml}
+                    </div>
+                `;
+            } catch (err) {
+                contentArea.innerHTML = `<div style="padding:20px; color:#ff5e7e;">Error: ${err.message}</div>`;
+            }
+        }
+
         fetchTraces();
     </script>
+
+    <!-- Branch Diff Modal -->
+    <div id="diff-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:100; align-items:center; justify-content:center;">
+        <div style="background:#101820; border:1px solid var(--border-subtle); border-radius:14px; width:800px; max-width:92vw; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+            <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:16px; font-weight:700; color:#F4F7FA; display:flex; align-items:center; gap:8px;">
+                    <span>🌿</span> Compare Branches (Trace Diff)
+                </h3>
+                <button onclick="closeDiffModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:18px; cursor:pointer;">&times;</button>
+            </div>
+
+            <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); display:flex; gap:16px; align-items:center; background:#0B1015;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; color:var(--text-muted);">Baseline (A):</span>
+                    <select id="diff-branch-a" onchange="runBranchDiff()" style="background:#16242F; color:#F4F7FA; border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-family:inherit;"></select>
+                </div>
+                <span style="color:var(--text-muted);">vs</span>
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <span style="font-size:13px; color:var(--text-muted);">Comparison (B):</span>
+                    <select id="diff-branch-b" onchange="runBranchDiff()" style="background:#16242F; color:#00D6A3; border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-family:inherit; font-weight:600;"></select>
+                </div>
+            </div>
+
+            <div id="diff-results-content" style="flex:1; overflow-y:auto; padding:20px;">
+                <!-- Populated dynamically by runBranchDiff() -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>

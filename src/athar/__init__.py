@@ -12,6 +12,7 @@ from .core.tracer import (
 )
 from .core.registry import FunctionRegistry, get_registry
 from .core.replayer import execute_replay
+from .core.diff import compare_branches
 from .storage.sqlite_store import TraceStore
 
 __version__ = "0.1.0"
@@ -22,6 +23,7 @@ __all__ = [
     "FunctionRegistry",
     "get_registry",
     "execute_replay",
+    "compare_branches",
     "get_active_trace_id",
     "set_active_trace_id",
     "get_trace_store",
