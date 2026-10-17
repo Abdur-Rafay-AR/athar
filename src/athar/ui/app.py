@@ -7,6 +7,8 @@ import time
 from typing import List, Dict, Any, Optional
 
 from ..storage.sqlite_store import TraceStore
+from ..core.replayer import execute_replay
+from ..core.registry import get_registry
 
 app = FastAPI(
     title="Athar UI & API",
@@ -73,11 +75,17 @@ def create_trace(payload: CreateTraceRequest):
     store.ensure_trace(trace_id, name=payload.name, metadata=payload.metadata)
     return {"status": "created", "trace_id": trace_id}
 
+@app.get("/api/registry")
+def list_registry():
+    registry = get_registry()
+    return {"registered_functions": registry.list_registered()}
+
 @app.post("/api/replay/{node_id}")
 def replay_from_node(node_id: str, payload: ReplayRequest):
     """
     Fork-and-replay from the given step.
-    Creates a new branch in the trace graph with mutated state.
+    If the function has an active registered callable, it runs real Python code!
+    Otherwise, creates a state-snapshot fork.
     """
     store = get_store()
     node = store.get_node(node_id)
@@ -85,15 +93,16 @@ def replay_from_node(node_id: str, payload: ReplayRequest):
         raise HTTPException(status_code=404, detail=f"Node {node_id} not found")
 
     try:
-        fork_result = store.fork_node(
+        replay_result = execute_replay(
+            store=store,
             node_id=node_id,
-            new_state=payload.new_state,
+            mutated_input=payload.new_state,
             branch_name=payload.branch_name
         )
         return {
             "status": "success",
-            "message": f"Successfully forked from node {node_id}",
-            "data": fork_result
+            "message": f"Replayed node {node_id} ({replay_result['execution_mode']})",
+            "data": replay_result
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

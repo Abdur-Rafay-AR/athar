@@ -629,6 +629,17 @@
             }
         }
 
+        let liveRegistry = {};
+
+        async function fetchRegistry() {
+            try {
+                const res = await fetch('/api/registry');
+                const data = await res.json();
+                liveRegistry = data.registered_functions || {};
+            } catch (e) {}
+        }
+        fetchRegistry();
+
         function inspectNode(node) {
             selectedNode = node;
             document.querySelectorAll('.node-step-card').forEach(c => c.classList.remove('selected'));
@@ -637,12 +648,20 @@
             pill.style.display = 'inline-block';
             pill.textContent = node.node_id.substring(0, 10);
 
+            const isLiveCallable = liveRegistry[node.func_name] !== undefined || liveRegistry[node.func_name.replace(' (forked)', '')] !== undefined;
+            const liveBadge = isLiveCallable 
+                ? `<span class="badge" style="background:#13382c; color:#00D6A3; border:1px solid #00D6A3;">⚡ Live Callable Registered</span>`
+                : `<span class="badge" style="background:#202933; color:#8CA3A3;">📝 State Mutation Mode</span>`;
+
             const panel = document.getElementById('inspector-content');
             panel.innerHTML = `
                 <div>
                     <div class="inspector-section-title">Function & Timing</div>
-                    <p style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 14px;">${escapeHtml(node.func_name)}</p>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                        <span style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 14px;">${escapeHtml(node.func_name)}</span>
+                        ${liveBadge}
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted);">
                         Latency: <strong>${(node.latency || 0).toFixed(4)}s</strong> &nbsp;|&nbsp; Cost: <strong>$${(node.cost || 0).toFixed(4)}</strong>
                     </p>
                 </div>
@@ -660,20 +679,22 @@
                 <div>
                     <div class="inspector-section-title">Fork &amp; Replay from this step</div>
                     <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                        Modify the input or state below and hit replay to fork execution without re-running earlier steps.
+                        ${isLiveCallable ? '⚡ <strong>Live Replay Enabled:</strong> Editing inputs will execute the real Python function and measure new outputs.' : 'Modify the input or state below and hit replay to fork execution without re-running earlier steps.'}
                     </p>
-                    <textarea id="fork-mutation-textarea" class="mutation-input">${escapeHtml(JSON.stringify(node.state_snapshot || node.input_data || {}, null, 2))}</textarea>
+                    <textarea id="fork-mutation-textarea" class="mutation-input">${escapeHtml(JSON.stringify(node.input_data || node.state_snapshot || {}, null, 2))}</textarea>
                     <div style="margin-top: 10px; display: flex; gap: 8px;">
                         <button class="btn btn-primary" onclick="executeFork('${node.node_id}')">
                             🌿 Execute Fork &amp; Replay
                         </button>
                     </div>
+                    <div id="replay-status-banner" style="margin-top:10px; display:none; padding:10px; border-radius:8px; font-size:12px;"></div>
                 </div>
             `;
         }
 
         async function executeFork(nodeId) {
             const textarea = document.getElementById('fork-mutation-textarea');
+            const statusBanner = document.getElementById('replay-status-banner');
             let parsedState;
             try {
                 parsedState = JSON.parse(textarea.value);
@@ -683,6 +704,13 @@
             }
 
             try {
+                if (statusBanner) {
+                    statusBanner.style.display = 'block';
+                    statusBanner.style.background = '#162934';
+                    statusBanner.style.color = '#00D6A3';
+                    statusBanner.textContent = '⏳ Executing replay...';
+                }
+
                 const res = await fetch(`/api/replay/${nodeId}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -693,10 +721,19 @@
                 });
                 const resData = await res.json();
                 if (res.ok) {
-                    alert(`✅ Branch created! Forked from ${nodeId}`);
-                    selectTrace(currentTraceId, document.getElementById('active-trace-title').textContent);
+                    const mode = resData.data ? resData.data.execution_mode : 'completed';
+                    if (statusBanner) {
+                        statusBanner.style.background = '#103328';
+                        statusBanner.style.color = '#1affc4';
+                        statusBanner.innerHTML = `✅ <strong>Replay Succeeded (${mode})!</strong> Branch created.`;
+                    }
+                    await selectTrace(currentTraceId, document.getElementById('active-trace-title').textContent);
                 } else {
-                    alert(`Failed to fork: ${resData.detail}`);
+                    if (statusBanner) {
+                        statusBanner.style.background = '#3d1620';
+                        statusBanner.style.color = '#ff5e7e';
+                        statusBanner.textContent = `❌ Failed: ${resData.detail}`;
+                    }
                 }
             } catch (err) {
                 alert(`Error executing fork: ${err.message}`);
