@@ -8,6 +8,7 @@ import uuid
 from typing import Callable, Any, Optional, Dict
 
 from ..storage.sqlite_store import TraceStore
+from .registry import get_registry
 
 # Context variables for tracking active trace execution context across async/threads
 _active_trace_id: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar("active_trace_id", default=None)
@@ -91,6 +92,7 @@ def traced(func: Optional[Callable] = None, *, name: Optional[str] = None, cost:
     """
     def decorator(fn: Callable) -> Callable:
         func_display_name = name or fn.__name__
+        get_registry().register(func_display_name, fn)
 
         if asyncio.iscoroutinefunction(fn):
             @functools.wraps(fn)
