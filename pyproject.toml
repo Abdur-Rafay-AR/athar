@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A local-first, time-travel debugger for multi-agent LLM systems."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [
     { name = "Abdur-Rafay-AR" }
 ]
@@ -31,7 +31,6 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
@@ -43,7 +42,9 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
-    "httpx>=0.24.0"
+    "httpx>=0.24.0",
+    "build>=1.0.0",
+    "twine>=5.0.0"
 ]
 
 [project.scripts]
@@ -57,3 +58,6 @@ Issues = "https://github.com/Abdur-Rafay-AR/athar/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"athar.ui" = ["static/*", "static/**/*"]
