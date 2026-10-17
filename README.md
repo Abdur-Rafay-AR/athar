@@ -6,7 +6,7 @@
   
   **A local-first, time-travel debugger and observability engine for multi-agent LLM systems.**
 
-  [![Tests](https://img.shields.io/badge/tests-13%20passed-00D6A3.svg)](tests/)
+  [![Tests](https://img.shields.io/badge/tests-21%20passed-00D6A3.svg)](tests/)
   [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-00D6A3.svg)](LICENSE)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -143,12 +143,30 @@ flowchart TD
 
 ## ✨ Features
 
-- 🌿 **Time-Travel Fork & Replay**: Edit inputs or state snapshots at any node and re-execute downstream steps without re-running earlier nodes.
+- 🌿 **Time-Travel Fork & Replay**: Edit inputs or state snapshots at any node and live-execute real Python code without re-running earlier nodes.
+- 🔬 **Semantic Branch Diffing**: Compare two execution branches side-by-side with $\Delta\text{cost}$, $\Delta\text{latency}$, and unified JSON/text diffs.
+- 🦜 **Universal LangChain & LangGraph Support**: Drop-in `AtharCallbackHandler` instruments any chain or graph in one line of code.
 - 🔒 **100% Local & Private**: No cloud credentials, zero telemetry, no external database dependencies. Your sensitive prompts and proprietary agent code never leave your machine.
 - ⚡ **Zero-Overhead Instrumentation**: Drop-in `@traced` decorator and `TracerContext` context manager with negligible runtime impact.
 - 📊 **Step Inspector**: Real-time view of inputs, arguments, outputs, errors, latency, and cost per step.
-- 🔌 **Framework Agnostic**: Works out of the box with raw Python loops, LangChain, AutoGen, CrewAI, and Crucible.
-- 🎨 **Modern Dark-Mode UI**: Built with a clean aesthetic, interactive timeline cards, and in-browser state mutation editor.
+- 🎨 **Modern Dark-Mode UI**: Built with a clean aesthetic, interactive timeline cards, live callable indicators, and branch comparison modal.
+
+---
+
+## 🦜 1-Line LangChain Integration
+
+If you use LangChain, LangGraph, or CrewAI, instrument your application with zero code modifications:
+
+```python
+from athar import AtharCallbackHandler
+
+handler = AtharCallbackHandler(trace_name="Market Analysis Chain")
+
+# Pass to any LangChain invocation:
+chain.invoke({"topic": "AI Trends"}, config={"callbacks": [handler]})
+```
+
+All chain steps, tool invocations, prompts, and token usages are automatically streamed into Athar.
 
 ---
 
@@ -185,9 +203,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details on development workflows, ada
 
 ## 🗺️ Roadmap
 
-- [x] **v0.1**: Local-first tracer SDK, SQLite WAL store, FastAPI server, interactive timeline UI, fork & replay mechanics.
-- [ ] **v0.2**: Side-by-side branch diff visualizer (compare outputs, cost differences, and token latency between two forks).
-- [ ] **v0.3**: Native adapters for LangChain callback handlers and AutoGen conversation listeners.
+- [x] **v0.1**: Local-first tracer SDK, SQLite WAL store, FastAPI server, interactive timeline UI, dynamic replay runtime.
+- [x] **v0.2**: Side-by-side branch diff visualizer (compare outputs, cost differences, and token latency between two forks).
+- [x] **v0.3**: Universal LangChain & LangGraph callback adapter (`AtharCallbackHandler`).
 - [ ] **v0.4**: Live trace streaming via WebSockets / Server-Sent Events (SSE).
 - [ ] **v1.0**: Stable SDK API, export traces to OpenTelemetry, and team sharing utilities.
 
