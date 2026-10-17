@@ -153,6 +153,7 @@ flowchart TD
 - 🌿 **Time-Travel Fork & Replay**: Edit inputs or state snapshots at any node and live-execute real Python code without re-running earlier nodes.
 - 🔬 **Semantic Branch Diffing**: Compare two execution branches side-by-side with $\Delta\text{cost}$, $\Delta\text{latency}$, and unified JSON/text diffs.
 - 🦜 **Universal LangChain & LangGraph Support**: Drop-in `AtharCallbackHandler` instruments any chain or graph in one line of code.
+- 🔌 **Native Framework Adapters**: First-class adapters for LangChain, LangGraph, CrewAI, and the [Crucible](https://github.com/Abdur-Rafay-AR/crucible) multi-agent engine.
 - 🔒 **100% Local & Private**: No cloud credentials, zero telemetry, no external database dependencies. Your sensitive prompts and proprietary agent code never leave your machine.
 - ⚡ **Zero-Overhead Instrumentation**: Drop-in `@traced` decorator and `TracerContext` context manager with negligible runtime impact.
 - 📊 **Step Inspector**: Real-time view of inputs, arguments, outputs, errors, latency, and cost per step.
