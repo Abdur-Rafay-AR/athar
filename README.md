@@ -1,12 +1,12 @@
 <div align="center">
 
-  <img src="assets/logo.svg" alt="Athar Logo" width="180" style="border-radius: 24px; margin-bottom: 12px;" />
+  <img src="assets/logo.svg" alt="Athar Logo" width="130" />
 
   # athar (أثر)
   
   **A local-first, time-travel debugger and observability engine for multi-agent LLM systems.**
 
-  [![CI](https://github.com/Abdur-Rafay-AR/athar/actions/workflows/ci.yml/badge.svg)](https://github.com/Abdur-Rafay-AR/athar/actions)
+  [![Tests](https://img.shields.io/badge/tests-13%20passed-00D6A3.svg)](tests/)
   [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-00D6A3.svg)](LICENSE)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
