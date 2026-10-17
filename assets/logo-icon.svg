@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="136" height="136" viewBox="0 0 136 136" fill="none" role="img" aria-label="Athar Icon">
+  <defs>
+    <filter id="icon-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96"
+        stroke="#F4F7FA" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <circle cx="68" cy="14" r="6.5" fill="#00D6A3" filter="url(#icon-glow)"/>
+  <circle cx="68" cy="55" r="5.5" fill="#00D6A3" stroke="#101820" stroke-width="2.5" filter="url(#icon-glow)"/>
+  <circle cx="32" cy="98" r="6.5" fill="#00D6A3" filter="url(#icon-glow)"/>
+  <circle cx="68" cy="106" r="6.5" fill="#00D6A3" filter="url(#icon-glow)"/>
+  <circle cx="104" cy="98" r="6.5" fill="#00D6A3" filter="url(#icon-glow)"/>
+</svg>

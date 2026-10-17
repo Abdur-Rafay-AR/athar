@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="220" viewBox="0 0 880 220" fill="none" role="img" aria-label="Athar Banner">
+  <defs>
+    <radialGradient id="banner-glow" cx="18%" cy="50%" r="55%">
+      <stop offset="0%" stop-color="#163140" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#101820" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#090e13" stop-opacity="1"/>
+    </radialGradient>
+    <filter id="banner-teal-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="banner-line-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#C2D3DE"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background container -->
+  <rect width="880" height="220" rx="20" fill="url(#banner-glow)"/>
+  <rect width="878" height="218" x="1" y="1" rx="19" stroke="#1d3442" stroke-width="1.2" fill="none"/>
+
+  <!-- Left: Emblem / Trace Mark -->
+  <g transform="translate(60, 42)">
+    <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96"
+          stroke="url(#banner-line-grad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="68" cy="14" r="6.5" fill="#00D6A3" filter="url(#banner-teal-glow)"/>
+    <circle cx="68" cy="55" r="5.5" fill="#00D6A3" stroke="#101820" stroke-width="2.5" filter="url(#banner-teal-glow)"/>
+    <circle cx="32" cy="98" r="6.5" fill="#00D6A3" filter="url(#banner-teal-glow)"/>
+    <circle cx="68" cy="106" r="6.5" fill="#00D6A3" filter="url(#banner-teal-glow)"/>
+    <circle cx="104" cy="98" r="6.5" fill="#00D6A3" filter="url(#banner-teal-glow)"/>
+  </g>
+
+  <!-- Right: Title, Slogan, and Details -->
+  <g transform="translate(230, 48)">
+    <!-- Brand Title -->
+    <text x="0" y="44"
+          font-family="'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          font-size="48" font-weight="700" letter-spacing="0.02em" fill="#F4F7FA">athar</text>
+
+    <!-- Tagline pill -->
+    <rect x="140" y="16" width="168" height="26" rx="13" fill="#172b38" stroke="#00D6A3" stroke-opacity="0.35" stroke-width="1"/>
+    <text x="224" y="33" text-anchor="middle"
+          font-family="'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          font-size="11" font-weight="600" letter-spacing="0.1em" fill="#00D6A3">FORK &#183; EDIT &#183; REPLAY</text>
+
+    <!-- Subtitle -->
+    <text x="0" y="80"
+          font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+          font-size="16" font-weight="400" fill="#B3C4D0">
+      Local-first, time-travel debugger &amp; observability for multi-agent LLM systems.
+    </text>
+
+    <!-- Feature badges line -->
+    <g transform="translate(0, 102)">
+      <text x="0" y="14"
+            font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+            font-size="12.5" font-weight="500" fill="#7E96A6">
+        &#x2714; Zero Cloud Lock-in &nbsp;&bull;&nbsp; &#x2714; SQLite Local Tracing &nbsp;&bull;&nbsp; &#x2714; Interactive Visual Timeline
+      </text>
+    </g>
+  </g>
+</svg>

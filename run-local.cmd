@@ -1,5 +1,7 @@
 @echo off
-echo Setting up local environment for Agent Tracer...
+echo =======================================================
+echo   ATHAR (أثر) · Local-First Multi-Agent Debugger
+echo =======================================================
 
 REM Check if venv exists, if not create it
 if not exist "venv" (
@@ -11,11 +13,11 @@ REM Activate virtual environment
 call venv\Scripts\activate.bat
 
 REM Install the package in editable mode
-echo Installing package and dependencies...
+echo Installing Athar in editable mode...
 pip install -e .
 
 REM Start the application
-echo Starting Agent Tracer...
-agent-tracer
+echo Starting Athar UI server on http://localhost:4173 ...
+athar
 
 pause

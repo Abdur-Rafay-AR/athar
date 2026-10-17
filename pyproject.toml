@@ -3,25 +3,57 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent-tracer"
+name = "athar"
 version = "0.1.0"
 description = "A local-first, time-travel debugger for multi-agent LLM systems."
 readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Abdur-Rafay-AR" }
+]
+keywords = [
+    "llm",
+    "agents",
+    "observability",
+    "debugger",
+    "time-travel",
+    "multi-agent",
+    "tracing",
+    "local-first"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Debuggers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "fastapi>=0.100.0",
     "uvicorn>=0.23.0",
     "pydantic>=2.0.0"
 ]
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "httpx>=0.24.0"
 ]
 
 [project.scripts]
-agent-tracer = "agent_tracer.ui.app:main"
+athar = "athar.ui.app:main"
+agent-tracer = "athar.ui.app:main"
 
+[project.urls]
+Homepage = "https://github.com/Abdur-Rafay-AR/athar"
+Repository = "https://github.com/Abdur-Rafay-AR/athar"
+Issues = "https://github.com/Abdur-Rafay-AR/athar/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

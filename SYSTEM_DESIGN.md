@@ -1,56 +1,123 @@
-# Agent Tracer System Design
+# Athar (أثر) · System Design & Architecture
+
+**Athar** (Arabic: *أثر*, meaning *trace*, *mark*, or *footprint*) is an open-source, local-first time-travel debugger and observability engine built specifically for multi-agent Large Language Model (LLM) architectures.
+
+---
 
 ## 1. High-Level Architecture
 
-Agent Tracer is designed as a localized, offline-first debugging framework for Large Language Model (LLM) agents. The system utilizes a three-tier architecture:
+Athar operates as an offline-first, zero-vendor-lock-in system structured into three distinct tiers:
 
-1.  **Instrumentation Layer (SDK):** A lightweight Python package that wraps execution contexts, capturing LLM queries, tool invocations, and state mutations.
-2.  **Storage Layer (SQLite):** A highly concurrent local database leveraging Write-Ahead Logging (WAL) to persist tracing trees and node hashes.
-3.  **Presentation Layer (Web UI):** A FastAPI backend paired with a React frontend to visualize directed acyclic graphs (DAGs) of execution paths and facilitate the "fork and replay" mechanism.
+```text
++------------------------------------------------------------------------+
+|                          Host Agent Application                        |
+|        (Raw Python Loops, AutoGen, LangChain, Crucible, CrewAI)        |
++-----------------------------------+------------------------------------+
+                                    |
+            instrumentation via @traced / TracerContext
+                                    v
++------------------------------------------------------------------------+
+|                          Athar SDK Engine                              |
+|  - Thread-safe & Async ContextVar tracking (parent-child call tree)    |
+|  - Deterministic SHA-256 step content hashing (dedup & replay checks)  |
+|  - Latency stopwatch and token / cost accounting                       |
++-----------------------------------+------------------------------------+
+                                    |
+                          non-blocking WAL writes
+                                    v
++------------------------------------------------------------------------+
+|                      Local Storage Layer (SQLite + WAL)                |
+|  - Write-Ahead Logging (WAL) for concurrent agent execution & UI reads |
+|  - Structured relational schema: traces, nodes, branches               |
++-----------------------------------+------------------------------------+
+                                    |
+                           RESTful polling / SSE
+                                    v
++------------------------------------------------------------------------+
+|                     Athar Presentation Layer (Web UI)                  |
+|  - FastAPI asynchronous backend server                                 |
+|  - Dark-mode responsive DAG explorer with interactive timeline         |
+|  - Step inspector with syntax-highlighted I/O payloads                 |
+|  - Interactive "Fork & Replay" state mutation engine                   |
++------------------------------------------------------------------------+
+```
 
-## 2. Core Components
+---
 
-### 2.1 The Trace SDK
+## 2. Core Subsystems
 
-The SDK provides both a decorator (`@traced`) and a context manager (`TracerContext`) for flexible integration. 
+### 2.1 The Instrumentation SDK (`athar.core.tracer`)
 
-*   **Node Hashing:** Each step in the trace generates a SHA-256 hash based on its inputs, parent state, and function signature. This guarantees idempotent replays.
-*   **Asynchronous Logging:** Employs a non-blocking queue (`asyncio.Queue`) for background database writes, ensuring that agent performance is not bottlenecked by I/O.
-*   **Adapter Pattern:** Pluggable adapters allow seamless integration with frameworks like LangChain, AutoGen, and Crucible.
+The SDK provides non-invasive hooks for capturing function executions:
 
-### 2.2 Storage Engine
+*   **Decorator (`@traced`)**: Can wrap both synchronous and asynchronous functions. Captures runtime arguments, keyword parameters, return values, raised exceptions, and wall-clock latency.
+*   **Session Scoping (`TracerContext`)**: Allows bundling an entire agent run or loop inside a single trace session with unique metadata and naming.
+*   **Context Chaining (`contextvars`)**: Tracks execution hierarchy without modifying agent signatures. Nested tool calls within an orchestrator agent automatically record the caller as `parent_node_id`.
+*   **Idempotent Content Hashing**: Computes SHA-256 hashes over normalized JSON inputs and outputs:
+    $$\text{step\_hash} = \text{SHA256}(\text{input\_json} \parallel \text{output\_json})$$
 
-The database schema models execution as a tree:
+### 2.2 Local Storage Engine (`athar.storage.sqlite_store`)
 
-*   `Traces`: Represents a full agent session.
-*   `Nodes`: Represents an individual step (LLM call, tool execution). Contains `node_id`, `trace_id`, `parent_node_id`, `input_data`, `output_data`, `state_snapshot`, `cost`, `latency`.
-*   `Branches`: Tracks divergence points when a user initiates a "fork and replay".
+Athar avoids cloud lock-in by using SQLite configured for high-concurrency workloads:
 
-WAL mode is strictly enforced to handle simultaneous reads from the Web UI and writes from the running agent.
+*   `PRAGMA journal_mode=WAL`: Permits concurrent readers (Web UI) and writers (agent processes) without database table locks.
+*   `PRAGMA synchronous=NORMAL`: Provides fast write performance while preserving database integrity.
 
-### 2.3 Execution Engine (Fork & Replay)
+#### Schema
 
-When a user edits state at a specific node and initiates a replay, the system performs the following:
-1.  Retrieves the complete state up to the fork point.
-2.  Injects the modified state.
-3.  Spawns a new isolated branch.
-4.  Re-executes the agent loop from the modified node onward.
+```sql
+CREATE TABLE traces (
+    trace_id TEXT PRIMARY KEY,
+    name TEXT,
+    status TEXT DEFAULT 'completed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    metadata TEXT
+);
 
-### 2.4 Web Interface
+CREATE TABLE nodes (
+    node_id TEXT PRIMARY KEY,
+    trace_id TEXT NOT NULL,
+    parent_node_id TEXT,
+    branch_id TEXT DEFAULT 'main',
+    func_name TEXT NOT NULL,
+    input_data TEXT,
+    output_data TEXT,
+    state_snapshot TEXT,
+    cost REAL DEFAULT 0.0,
+    latency REAL DEFAULT 0.0,
+    step_hash TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(trace_id) REFERENCES traces(trace_id) ON DELETE CASCADE
+);
+```
 
-*   **Backend (FastAPI):** Serves RESTful endpoints for trace retrieval, diff calculation, and replay invocation.
-*   **Frontend (React):** Features a timeline scrubber, side-by-side branch diff viewer, and a Monaco-based JSON editor for state modification.
+### 2.3 Time-Travel Engine (Fork & Replay)
 
-## 3. Data Flow Diagram
+When an agent deviates from its intended trajectory (e.g., a hallucinated tool response at step 4 in a 10-step chain), Athar allows forking from that specific node:
 
-1.  **Agent Execution:** User agent code calls a wrapped function.
-2.  **Capture:** The SDK serializes the input and takes a shallow copy of the state.
-3.  **Execution:** The original function executes.
-4.  **Completion:** Output and latency are recorded. The result is dispatched to the async write queue.
-5.  **Persistence:** The worker thread writes the node to SQLite.
-6.  **Visualization:** The UI polls the local API (or uses WebSockets) to update the timeline.
+1. **Snapshot Retrieval**: Fetches the state snapshot and inputs at `node_id`.
+2. **State Mutation**: The user injects corrected state or modified outputs in the UI or via API.
+3. **Branching**: Athar registers a new `branch_id` linked to the same parent node.
+4. **Replay Execution**: The agent continues forward from the fork point with the mutated inputs. Previous steps (1 through 3) are never re-executed, saving tokens, time, and API cost.
 
-## 4. Future Extensibility
+---
 
-*   **Custom Storage Backends:** Interface segregation allows swapping SQLite for Postgres in team environments.
-*   **Automated Anomaly Detection:** Potential integration of local embeddings to automatically flag divergent or failing branches.
+## 3. UI and Presentation Tier
+
+The Web UI is delivered directly through FastAPI:
+
+*   **Timeline View**: Visual representation of sequential and branched steps.
+*   **Node Inspector**: Full inspection of inputs, outputs, errors, latency, and costs.
+*   **State Editor**: In-browser JSON editor to trigger fork-and-replay runs.
+*   **Sample Seed Engine**: Instant demonstration generator for onboarding and testing.
+
+---
+
+## 4. Extensibility & Integrations
+
+Athar is designed to plug directly into agent frameworks:
+
+*   **Raw Python Agents**: Direct decoration with `@traced`.
+*   **Crucible Framework**: Dedicated `CrucibleAdapter` automatically wrapping agent `act()` / `run()` methods.
+*   **LangChain / AutoGen / CrewAI**: Wrappable at callback or tool dispatch boundaries.

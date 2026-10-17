@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athar · Local-First Time-Travel Multi-Agent Debugger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0B1015;
+            --bg-surface: #101820;
+            --bg-elevated: #16242F;
+            --bg-glass: rgba(16, 24, 32, 0.85);
+            --border-subtle: #1D2E3A;
+            --border-focus: #00D6A3;
+            --text-main: #F4F7FA;
+            --text-muted: #8CA3A3;
+            --text-dim: #5C7575;
+            --accent-teal: #00D6A3;
+            --accent-teal-glow: rgba(0, 214, 163, 0.22);
+            --accent-orange: #FF9F43;
+            --accent-purple: #9D72FF;
+            --accent-red: #FF5E7E;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Top Bar */
+        header {
+            background: var(--bg-glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-logo {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-titles h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            line-height: 1;
+            color: var(--text-main);
+        }
+
+        .brand-tag {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            color: var(--accent-teal);
+            margin-top: 2px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            text-decoration: none;
+            font-family: inherit;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent-teal);
+            color: #0B1015;
+            box-shadow: 0 0 16px var(--accent-teal-glow);
+        }
+        .btn-primary:hover {
+            background: #1affc4;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-main);
+            border-color: var(--border-subtle);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent-teal);
+            color: var(--accent-teal);
+        }
+
+        .btn-danger {
+            background: rgba(255, 94, 126, 0.12);
+            color: var(--accent-red);
+            border-color: rgba(255, 94, 126, 0.25);
+        }
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: #fff;
+        }
+
+        /* Main Workspace Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 320px 1fr 420px;
+            flex: 1;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        /* Left Sidebar: Traces */
+        .sidebar {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-title {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        .trace-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .trace-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .trace-card:hover {
+            border-color: var(--accent-teal);
+            transform: translateX(2px);
+        }
+        .trace-card.active {
+            border-color: var(--accent-teal);
+            background: #142833;
+            box-shadow: 0 0 12px rgba(0, 214, 163, 0.15);
+        }
+
+        .trace-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .trace-card-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Center: Timeline & DAG */
+        .timeline-area {
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-base);
+            overflow: hidden;
+        }
+
+        .timeline-header {
+            padding: 16px 24px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .stats-strip {
+            display: flex;
+            gap: 18px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+        .stat-value {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .nodes-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+        }
+
+        .node-step-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .node-step-card:hover {
+            border-color: var(--accent-teal);
+            box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+        }
+        .node-step-card.selected {
+            border-color: var(--accent-teal);
+            background: #12212b;
+        }
+
+        .node-step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .node-badge-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 6px;
+        }
+        .badge-main { background: #16303d; color: var(--accent-teal); }
+        .badge-fork { background: #351c4a; color: var(--accent-purple); }
+        .badge-latency { background: #22292f; color: var(--accent-orange); }
+
+        .node-func-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .node-preview-box {
+            background: #090e13;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Right Panel: Node Inspector */
+        .inspector-panel {
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .inspector-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .inspector-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .inspector-section-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        pre.code-block {
+            background: #080d12;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: #d1dbe3;
+            overflow-x: auto;
+            max-height: 200px;
+        }
+
+        textarea.mutation-input {
+            width: 100%;
+            height: 120px;
+            background: #080d12;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            padding: 12px;
+            color: #00D6A3;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            resize: vertical;
+        }
+        textarea.mutation-input:focus {
+            outline: none;
+            border-color: var(--accent-teal);
+        }
+
+        /* Empty states */
+        .empty-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            gap: 14px;
+        }
+
+        /* Branching visual line */
+        .branch-stem {
+            position: absolute;
+            left: 32px;
+            top: -16px;
+            width: 2px;
+            height: 16px;
+            background: var(--border-subtle);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="brand-container">
+            <div class="brand-logo">
+                <svg width="34" height="34" viewBox="0 0 136 136" fill="none">
+                    <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96" stroke="#F4F7FA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="68" cy="14" r="8" fill="#00D6A3"/>
+                    <circle cx="68" cy="55" r="7" fill="#00D6A3" stroke="#101820" stroke-width="3"/>
+                    <circle cx="32" cy="98" r="8" fill="#00D6A3"/>
+                    <circle cx="68" cy="106" r="8" fill="#00D6A3"/>
+                    <circle cx="104" cy="98" r="8" fill="#00D6A3"/>
+                </svg>
+            </div>
+            <div class="brand-titles">
+                <h1>athar</h1>
+                <div class="brand-tag">FORK · EDIT · REPLAY</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button class="btn btn-secondary" onclick="seedSampleTrace()">
+                <span>⚡</span> Seed Sample Trace
+            </button>
+            <button class="btn btn-secondary" onclick="fetchTraces()">
+                <span>↻</span> Refresh
+            </button>
+            <a href="https://github.com/Abdur-Rafay-AR/athar" target="_blank" class="btn btn-secondary">
+                GitHub
+            </a>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <!-- Sidebar: Trace history -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Traces</span>
+                <span id="trace-count-pill" class="badge badge-main">0</span>
+            </div>
+            <div class="trace-list" id="trace-list">
+                <div class="empty-placeholder">
+                    <p>Loading trace sessions...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Center: Node Timeline / DAG -->
+        <main class="timeline-area">
+            <div class="timeline-header">
+                <div>
+                    <h2 id="active-trace-title" style="font-size: 18px; font-weight: 700;">Select a Trace</h2>
+                    <span id="active-trace-subtitle" style="font-size: 12px; color: var(--text-muted);">No trace selected</span>
+                </div>
+                <div class="stats-strip" id="active-trace-stats" style="display: none;">
+                    <div class="stat-item">
+                        <span class="stat-label">Steps</span>
+                        <span class="stat-value" id="stat-steps">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Latency</span>
+                        <span class="stat-value" id="stat-latency">0.00s</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Cost</span>
+                        <span class="stat-value" id="stat-cost">$0.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="nodes-container" id="nodes-container">
+                <div class="empty-placeholder">
+                    <svg width="48" height="48" viewBox="0 0 136 136" fill="none" opacity="0.4">
+                        <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96" stroke="#8CA3A3" stroke-width="4"/>
+                        <circle cx="68" cy="14" r="7" fill="#00D6A3"/>
+                        <circle cx="68" cy="55" r="6" fill="#00D6A3"/>
+                        <circle cx="32" cy="98" r="7" fill="#00D6A3"/>
+                        <circle cx="68" cy="106" r="7" fill="#00D6A3"/>
+                        <circle cx="104" cy="98" r="7" fill="#00D6A3"/>
+                    </svg>
+                    <p>Pick a trace from the left or run your code instrumented with <code>@traced</code>.</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right: Inspector & Fork-and-Replay -->
+        <aside class="inspector-panel">
+            <div class="inspector-header">
+                <span class="sidebar-title">Step Inspector</span>
+                <span id="inspector-node-id" class="badge badge-main" style="display:none;"></span>
+            </div>
+
+            <div class="inspector-content" id="inspector-content">
+                <div class="empty-placeholder">
+                    <p>Click any step in the timeline to inspect inputs, outputs, hashes, and initiate a fork-and-replay.</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        let currentTraceId = null;
+        let currentNodes = [];
+        let selectedNode = null;
+
+        async function fetchTraces() {
+            try {
+                const res = await fetch('/api/traces');
+                const data = await res.json();
+                const container = document.getElementById('trace-list');
+                const countPill = document.getElementById('trace-count-pill');
+                
+                countPill.textContent = data.traces ? data.traces.length : 0;
+                container.innerHTML = '';
+
+                if (!data.traces || data.traces.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-placeholder">
+                            <p>No traces recorded yet.</p>
+                            <button class="btn btn-primary" onclick="seedSampleTrace()">Seed Demo Trace</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                data.traces.forEach((trace, idx) => {
+                    const card = document.createElement('div');
+                    card.className = `trace-card ${trace.trace_id === currentTraceId ? 'active' : ''}`;
+                    card.onclick = () => selectTrace(trace.trace_id, trace.name, trace);
+
+                    const dateStr = trace.created_at ? new Date(trace.created_at).toLocaleTimeString() : 'Recent';
+                    card.innerHTML = `
+                        <div class="trace-card-title">${escapeHtml(trace.name || trace.trace_id)}</div>
+                        <div class="trace-card-meta">
+                            <span>⚡ ${trace.node_count || 0} steps</span>
+                            <span>⏱️ ${(trace.total_latency || 0).toFixed(2)}s</span>
+                            <span>📅 ${dateStr}</span>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+
+                if (!currentTraceId && data.traces.length > 0) {
+                    selectTrace(data.traces[0].trace_id, data.traces[0].name, data.traces[0]);
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('trace-list').innerHTML = '<div class="empty-placeholder"><p>Error connecting to Athar API.</p></div>';
+            }
+        }
+
+        async function selectTrace(traceId, traceName, traceMeta) {
+            currentTraceId = traceId;
+            document.querySelectorAll('.trace-card').forEach(c => c.classList.remove('active'));
+            document.getElementById('active-trace-title').textContent = traceName || traceId;
+            document.getElementById('active-trace-subtitle').textContent = `ID: ${traceId}`;
+            document.getElementById('active-trace-stats').style.display = 'flex';
+
+            try {
+                const res = await fetch(`/api/traces/${traceId}/nodes`);
+                const data = await res.json();
+                currentNodes = data.nodes || [];
+
+                // Update summary stats
+                let totalLat = 0;
+                let totalCost = 0;
+                currentNodes.forEach(n => {
+                    totalLat += (n.latency || 0);
+                    totalCost += (n.cost || 0);
+                });
+                document.getElementById('stat-steps').textContent = currentNodes.length;
+                document.getElementById('stat-latency').textContent = `${totalLat.toFixed(2)}s`;
+                document.getElementById('stat-cost').textContent = `$${totalCost.toFixed(4)}`;
+
+                renderNodes(currentNodes);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderNodes(nodes) {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+
+            if (nodes.length === 0) {
+                container.innerHTML = '<div class="empty-placeholder"><p>No steps found in this trace.</p></div>';
+                return;
+            }
+
+            nodes.forEach((node, idx) => {
+                const card = document.createElement('div');
+                card.className = `node-step-card ${selectedNode && selectedNode.node_id === node.node_id ? 'selected' : ''}`;
+                card.onclick = () => inspectNode(node);
+
+                const isFork = node.branch_id && node.branch_id !== 'main';
+                const branchBadge = isFork 
+                    ? `<span class="badge badge-fork">🌿 ${escapeHtml(node.branch_id)}</span>`
+                    : `<span class="badge badge-main">main</span>`;
+
+                card.innerHTML = `
+                    <div class="node-step-header">
+                        <span class="node-func-name">#${idx + 1} &nbsp;${escapeHtml(node.func_name)}</span>
+                        <div class="node-badge-group">
+                            ${branchBadge}
+                            <span class="badge badge-latency">${(node.latency || 0).toFixed(3)}s</span>
+                        </div>
+                    </div>
+                    <div class="node-preview-box">
+                        Hash: ${escapeHtml(node.step_hash ? node.step_hash.substring(0, 20) + '...' : 'none')}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            if (nodes.length > 0 && !selectedNode) {
+                inspectNode(nodes[0]);
+            }
+        }
+
+        function inspectNode(node) {
+            selectedNode = node;
+            document.querySelectorAll('.node-step-card').forEach(c => c.classList.remove('selected'));
+            
+            const pill = document.getElementById('inspector-node-id');
+            pill.style.display = 'inline-block';
+            pill.textContent = node.node_id.substring(0, 10);
+
+            const panel = document.getElementById('inspector-content');
+            panel.innerHTML = `
+                <div>
+                    <div class="inspector-section-title">Function & Timing</div>
+                    <p style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 14px;">${escapeHtml(node.func_name)}</p>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        Latency: <strong>${(node.latency || 0).toFixed(4)}s</strong> &nbsp;|&nbsp; Cost: <strong>$${(node.cost || 0).toFixed(4)}</strong>
+                    </p>
+                </div>
+
+                <div>
+                    <div class="inspector-section-title">Inputs</div>
+                    <pre class="code-block">${escapeHtml(JSON.stringify(node.input_data, null, 2))}</pre>
+                </div>
+
+                <div>
+                    <div class="inspector-section-title">Output / Result</div>
+                    <pre class="code-block">${escapeHtml(JSON.stringify(node.output_data, null, 2))}</pre>
+                </div>
+
+                <div>
+                    <div class="inspector-section-title">Fork &amp; Replay from this step</div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                        Modify the input or state below and hit replay to fork execution without re-running earlier steps.
+                    </p>
+                    <textarea id="fork-mutation-textarea" class="mutation-input">${escapeHtml(JSON.stringify(node.state_snapshot || node.input_data || {}, null, 2))}</textarea>
+                    <div style="margin-top: 10px; display: flex; gap: 8px;">
+                        <button class="btn btn-primary" onclick="executeFork('${node.node_id}')">
+                            🌿 Execute Fork &amp; Replay
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function executeFork(nodeId) {
+            const textarea = document.getElementById('fork-mutation-textarea');
+            let parsedState;
+            try {
+                parsedState = JSON.parse(textarea.value);
+            } catch (err) {
+                alert('Invalid JSON in state mutation editor. Please check syntax.');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/replay/${nodeId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        new_state: parsedState,
+                        branch_name: `fork_${Math.floor(Math.random() * 1000)}`
+                    })
+                });
+                const resData = await res.json();
+                if (res.ok) {
+                    alert(`✅ Branch created! Forked from ${nodeId}`);
+                    selectTrace(currentTraceId, document.getElementById('active-trace-title').textContent);
+                } else {
+                    alert(`Failed to fork: ${resData.detail}`);
+                }
+            } catch (err) {
+                alert(`Error executing fork: ${err.message}`);
+            }
+        }
+
+        async function seedSampleTrace() {
+            try {
+                const res = await fetch('/api/seed-sample', { method: 'POST' });
+                const data = await res.json();
+                await fetchTraces();
+                if (data.trace_id) {
+                    selectTrace(data.trace_id, "Multi-Agent Market Analysis");
+                }
+            } catch (err) {
+                alert('Failed to seed sample trace: ' + err.message);
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        fetchTraces();
+    </script>
+</body>
+</html>
