@@ -49,10 +49,10 @@ Debugging multi-agent systems is difficult because **errors compound**. When an 
 - **Record**: Captures prompts, tool calls, return values, state snapshots, latency, and SHA-256 step hashes to a local SQLite database using Write-Ahead Logging (WAL).
 - **Inspect**: Scrub through the execution timeline in a zero-dependency dark-mode web UI.
 - **Modify**: Edit prompts, mock tool outputs, or tweak agent state at any step.
-- **Fork & Replay**: Resume execution from that exact step forward. **Prior steps are never re-executed**, saving 100% of their API tokens and execution time.
+- **Fork & Replay**: Fork execution at any step to re-execute with mutated arguments or state. **Prior steps are never re-executed**, saving their execution time and token costs.
 - **Diff**: Compare branches side-by-side with delta cost, delta latency, and unified output diffs.
 
-> **Zero cloud egress.** No accounts, no telemetry, no external database servers. Your prompts and proprietary agent code never leave your machine.
+> **Local-first telemetry.** Athar transmits zero telemetry, requires no accounts, and connects to no external database servers. All trace data remains on your local machine in SQLite. (Note: Network calls made directly by your own agent or LLM providers still communicate with their respective API endpoints).
 
 ---
 
@@ -87,9 +87,9 @@ flowchart TD
 ```
 
 ### The Traditional Debugging Experience
-1. **Wasted Cost & Latency**: To test a fix at Step 12, you must re-run Steps 1 through 11 every single time. A 30-step pipeline can easily burn \$2.00–\$5.00 and 90 seconds per iteration.
+1. **Wasted Cost & Latency**: To test a fix at Step 12, you must re-run Steps 1 through 11 every single time. In multi-step agent pipelines, re-running from scratch burns compounding API tokens and minutes of waiting on each iteration.
 2. **LLM Stochasticity**: Even at `temperature=0`, non-deterministic provider routing and concurrent tool outputs mean re-running from scratch often fails to reproduce the exact state that caused the bug.
-3. **SaaS Observability Gaps**: Tools like LangSmith, Langfuse, and Arize Phoenix are built for **post-mortem logging**, but they do not provide **interactive local time-travel replay**. You cannot click a node, edit its state, and live-execute forward inside your active Python environment.
+3. **Observability vs. Local Debugging**: Most LLM observability platforms (such as LangSmith, Langfuse, and Arize Phoenix) are designed primarily for cloud-scale tracing, evaluation datasets, and production monitoring. During active local development, however, developers need immediate time-travel debugging: click a step, edit inputs, and re-execute callables directly in the local development environment without spinning up external infrastructure.
 
 ---
 
@@ -102,17 +102,18 @@ flowchart LR
     R["1. RECORD<br/>(@traced / Callbacks)"] --> I["2. INSPECT<br/>(Timeline & Inspector)"]
     I --> M["3. MODIFY<br/>(JSON State Editor)"]
     M --> F["4. FORK<br/>(Branch in DAG)"]
-    F --> P["5. REPLAY<br/>(Execute Forward)"]
+    F --> P["5. REPLAY<br/>(Re-execute Step)"]
 ```
 
 1. **RECORD**: Wrap Python functions with `@traced` or pass `AtharCallbackHandler` to LangChain or LangGraph. Execution steps, inputs, outputs, errors, latency, and SHA-256 content hashes are written to local SQLite via thread-safe WAL mode.
-2. **INSPECT**: Start `athar` and open `http://localhost:4173`. Scrub through the chronological execution cards or examine the parent-child DAG hierarchy.
+2. **INSPECT**: Start `athar` and open `http://localhost:4173`. Scrub through chronological execution cards or examine the parent-child DAG hierarchy.
 3. **MODIFY**: Click the problematic step. In the Step Inspector, edit the input arguments, tool payload, or state snapshot in the JSON editor.
-4. **FORK**: Athar creates a new execution branch (for example, `branch_empirical`) linked to the fork point. Historical traces remain immutable and intact.
+4. **FORK**: Athar creates a new execution branch (for example, `branch_replay_1`) linked to the fork point. Historical traces remain immutable and intact.
 5. **REPLAY**:
-   - **Live Execution Mode**: If the function is registered in the active Python session, Athar re-invokes the real callable with mutated arguments, measuring true output and latency.
+   - **Live Callable Replay**: If the step function is registered in the active Python session, Athar re-invokes the real callable with mutated arguments, measuring true output and latency.
    - **State Mutation Mode**: If inspecting offline or across process restarts, Athar records a state mutation snapshot branch for downstream inspection.
    - **Semantic Branch Diff**: Compare the original and forked branches side-by-side with delta cost, delta latency, and unified text and JSON diffs.
+   *(Note: Current releases re-execute the selected step; automated cascading replay across downstream steps is planned for v0.4).*
 
 ---
 
@@ -187,7 +188,7 @@ Visit **[http://localhost:4173](http://localhost:4173)** in your browser.
 
 ## Real-World Example: Debugging a Multi-Agent Loop
 
-Here is how you debug an autonomous research workflow when an intermediate tool returns bad data:
+Here is how you debug an autonomous research workflow when an intermediate tool returns insufficient data:
 
 ```python
 from athar import traced, TracerContext
@@ -195,11 +196,11 @@ from athar import traced, TracerContext
 @traced(cost=0.0005)
 def market_search(query: str):
     # Suppose this initially returns an unhelpful generic response
-    return {"status": "ok", "summary": "Generic market overview without metrics"}
+    return {"status": "ok", "summary": "Generic market overview (no quantitative data)"}
 
 @traced(cost=0.0020)
 def synthesis_agent(context: dict):
-    # Operates on the search output
+    # Fails or warns if quantitative metrics are missing
     if "metrics" not in context.get("summary", ""):
         return "Warning: Insufficient data to synthesize definitive report."
     return "Final report: Enterprise velocity increased by 38%."
@@ -207,7 +208,7 @@ def synthesis_agent(context: dict):
 def run_pipeline():
     with TracerContext(name="Quarterly Velocity Analysis"):
         search_output = market_search("Developer productivity benchmarks")
-        report = synthesis_agent(search_output)
+        report = synthesis_agent(context=search_output)
         print("Pipeline Result:", report)
 
 if __name__ == "__main__":
@@ -215,25 +216,29 @@ if __name__ == "__main__":
 ```
 
 ### What Happens in Athar:
-1. Run the script. The synthesizer warns of insufficient data.
+1. Run the script. The synthesizer outputs: `Warning: Insufficient data to synthesize definitive report.`
 2. Launch `athar` and open `http://localhost:4173`.
-3. Select `market_search` in the timeline.
-4. In the Step Inspector, change the output or arguments to:
+3. Select `synthesis_agent` (the step that generated the warning) in the timeline.
+4. In the Step Inspector, edit the input `context` to test the synthesizer logic with corrected data:
    ```json
    {
-     "summary": "Empirical study: metrics demonstrate 38% velocity increase across 45 teams"
+     "context": {
+       "summary": "Empirical study: metrics demonstrate 38% velocity increase across 45 teams"
+     }
    }
    ```
 5. Click **"Execute Fork & Replay"**.
-6. Athar creates `branch_replay_1` and re-runs `market_search (forked)` with the corrected input.
-7. Click **"Compare Branches"** to verify that the synthesis output now succeeds, while reviewing the exact cost and latency delta.
+6. Because `synthesis_agent` is registered in memory, Athar re-runs `synthesis_agent (forked)` with the corrected input, immediately producing `"Final report: Enterprise velocity increased by 38%."` without re-running `market_search`.
+7. Click **"Compare Branches"** to view the structured diff between the warning output on `main` and the successful report on the forked branch, along with delta latency and cost.
+
+*Table: Debugging workflow comparison (Illustrative scenario).*
 
 | Dimension | Without Athar | With Athar |
 | :--- | :--- | :--- |
-| **Token Cost** | Re-spends tokens for all steps 1..N | **0 tokens** spent on prior steps |
-| **Iteration Latency** | Full pipeline duration (30s–2min) | **Sub-second** replay from fork point |
-| **Reproducibility** | Stochastic (LLM may drift) | **Deterministic** state injection |
-| **Execution History** | Overwrites console logs | **Immutable DAG branches** in SQLite |
+| **Token Cost** | Re-spends tokens for all steps 1..N | **0 tokens** on prior steps (only replayed step runs) |
+| **Iteration Latency** | Full pipeline re-run duration | Immediate execution of forked step |
+| **Reproducibility** | Stochastic (LLM outputs drift on re-runs) | Deterministic state injection for target step |
+| **Execution History** | Overwrites console logs | Immutable DAG branches in SQLite |
 
 ---
 
@@ -285,10 +290,10 @@ flowchart TD
   - Computes a canonical SHA-256 hash over normalized inputs and outputs:
     $$\text{step\_hash} = \text{SHA256}(\text{canonical\_json}(\text{inputs}) \parallel \text{canonical\_json}(\text{outputs}))$$
   - Enables deduplication, cache validation, and divergence detection.
-- **High-Concurrency SQLite Storage (`athar.storage.sqlite_store`)**:
-  - `PRAGMA journal_mode=WAL;`: Permits concurrent reader threads (Web UI polling) and writer processes (high-throughput agent loops) without lock contention.
-  - `PRAGMA synchronous=NORMAL;`: Maximizes write throughput while preserving ACID crash safety.
-  - Thread-local connection pooling prevents SQLite connection sharing across threads.
+- **Concurrent SQLite Storage (`athar.storage.sqlite_store`)**:
+  - `PRAGMA journal_mode=WAL;`: Allows concurrent readers (such as the Web UI) to operate simultaneously without blocking or being blocked by writing operations. While SQLite serializes writes (one writer at a time), concurrent write requests are managed via a 10-second busy timeout.
+  - `PRAGMA synchronous=NORMAL;`: Avoids costly fsync calls on every commit in WAL mode, significantly improving write throughput while ensuring structural database integrity across application crashes.
+  - Thread-local connection management: Isolates SQLite connection objects per thread to prevent cross-thread handle sharing.
 - **Dynamic Replay Engine (`athar.core.replayer`, `athar.core.registry`)**:
   - Distinguishes between **Live Callable Replay** (active in-memory Python function re-invoked with mutated inputs) and **State Snapshot Forking** (offline inspection and annotation).
 - **Semantic Branch Diffing (`athar.core.diff`)**:
@@ -348,10 +353,10 @@ agent.run()
 
 | Decision | Why Athar Does It | Trade-Off |
 | :--- | :--- | :--- |
-| **Local-First (SQLite WAL)** | Zero privacy risk, zero cloud egress, zero SaaS costs, zero external database setup (Docker/Postgres). | Traces reside on your local machine; team sharing requires exporting or copying the `.db` file. |
-| **Deterministic SHA-256 Hashes** | Verifies whether a replayed step actually altered inputs or outputs compared to the original execution. | Minor serialization overhead per step (~0.05ms for typical JSON payloads). |
-| **Immutability of History** | Replaying never overwrites historical execution nodes; it creates new branches (`branch_id`) referencing the parent. | Database file grows with each branch until vacuumed or cleared. |
-| **Dual Replay Modes** | Allows live Python execution when running interactive sessions, while gracefully supporting offline trace inspection. | Re-executing live code across process restarts requires the host script to re-register its functions. |
+| **Local-First Storage (SQLite WAL)** | Zero SaaS dependencies, no telemetry, no external database setup (Docker/PostgreSQL). | Traces reside on your local machine; team collaboration requires sharing or exporting the `.db` file. |
+| **Deterministic SHA-256 Hashes** | Verifies whether a replayed step altered inputs or outputs compared to baseline execution. | Requires JSON serialization and hash calculation for each traced step. |
+| **Immutability of History** | Replaying never overwrites historical execution nodes; it creates new branch records referencing the parent. | Database file grows with each branch until cleaned or deleted. |
+| **Dual Replay Modes** | Enables live Python execution during active sessions, while gracefully supporting offline trace inspection. | Re-executing live code across process restarts requires the host process to maintain registered callables. |
 
 ---
 
@@ -359,13 +364,13 @@ agent.run()
 
 | Capability | Athar | LangSmith | Langfuse | Arize Phoenix | LangGraph Studio |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Primary Focus** | **Time-travel debugging & state replay** | Production tracing & evaluation | Observability & prompt management | LLM tracing & evaluations | Graph execution visualizer |
-| **Deployment Model** | **100% Local-first (single `.db`)** | SaaS (Cloud) / Enterprise | Self-hosted (Docker) or Cloud | Self-hosted or Cloud | Desktop App / Cloud |
-| **Data Privacy** | **Zero cloud egress** | Sends data to cloud | Depends on deployment | Depends on deployment | Local / Cloud |
-| **State Mutation & Replay** | **Native UI + Live Python re-execution** | Manual playground rerun | Manual rerun | Trace viewing only | Step checkpoint rewinding |
-| **Prior Step Skipping** | **Prior steps are never re-executed** | No | No | No | Checkpoint dependent |
-| **Semantic Branch Diff** | **Built-in ($\Delta\text{cost}$, $\Delta\text{latency}$, diffs)** | Basic comparison | No | No | No |
-| **Infrastructure Overhead** | **`pip install athar` (0 config)** | API key & network | PostgreSQL + ClickHouse | Docker container | Docker / LangGraph CLI |
+| **Primary Focus** | **Local time-travel debugging & step replay** | Production tracing & evaluation | Open-source observability & metrics | LLM evaluation & trace analysis | Visual graph IDE & checkpoint time travel |
+| **Deployment Model** | **Local-first (embedded SQLite file)** | SaaS (Cloud) / Enterprise | Self-hosted (Docker) or Cloud | Local (`pip`) or Cloud | Desktop app (Docker / LangGraph CLI) |
+| **Debugger Telemetry** | **Zero telemetry from Athar** | Sends trace data to cloud | Stored in self-hosted or cloud DB | Stored locally in Phoenix DB or cloud | Local LangGraph server or cloud |
+| **State Mutation & Replay** | **UI step mutation + live Python re-execution** | Prompt playground re-run | Playground testing | Experiment evaluation runs | Checkpoint state editing & node re-runs |
+| **Prior Step Skipping** | **Replays target step directly (prior steps skipped)** | No | No | No | Resumes from checkpoint state |
+| **Semantic Branch Diff** | **Built-in ($\Delta\text{cost}$, $\Delta\text{latency}$, step diffs)** | Run comparison | Run comparison | Experiment comparison | State inspection per checkpoint |
+| **Infrastructure Overhead** | **`pip install athar` (0 config)** | API key & network | Docker (PostgreSQL + ClickHouse) | Local Python package (`arize-phoenix`) | Desktop App + Docker + LangGraph CLI |
 
 ---
 
@@ -386,12 +391,21 @@ To maintain technical credibility, we document our current constraints honestly:
 
 ## Roadmap
 
-- [x] **v0.1**: Local-first tracer SDK (`@traced`, `TracerContext`), SQLite WAL store, FastAPI server, interactive timeline UI, dynamic replay runtime.
-- [x] **v0.2**: Side-by-side semantic branch diff visualizer (compare outputs, cost differentials, and latency between forks).
-- [x] **v0.3**: Universal LangChain & LangGraph callback adapter (`AtharCallbackHandler`), Crucible adapter, CLI entrypoint (`athar`).
-- [ ] **v0.4**: Live trace streaming via WebSockets / Server-Sent Events (SSE).
-- [ ] **v0.5**: Automated multi-step cascade replay engine for directed acyclic agent graphs.
-- [ ] **v1.0**: Trace export utilities (OpenTelemetry & JSON-L format) and multi-session sharing.
+- [x] **v0.1.0 (Current Release)**:
+  - Local-first tracer SDK (`@traced`, `TracerContext`, contextvars call tree).
+  - SQLite WAL storage with trace and branch deletion management.
+  - Web UI debugger with interactive timeline, JSON state mutation editor, and live callable re-execution.
+  - Side-by-side semantic branch diff visualizer ($\Delta\text{cost}$, $\Delta\text{latency}$, and output diffs).
+  - Universal LangChain & LangGraph callback adapter (`AtharCallbackHandler`) and Crucible adapter (`CrucibleAdapter`).
+- [ ] **v0.2.0 (In Progress)**:
+  - CLI trace export utilities (`athar export` for formatted JSON and OpenTelemetry).
+  - Timeline search and tag filtering in the Web UI.
+- [ ] **v0.3.0 (Planned)**:
+  - Live trace streaming via Server-Sent Events (SSE) / WebSockets.
+  - Native Microsoft AutoGen and CrewAI adapters.
+- [ ] **v0.4.0 (Planned)**:
+  - Automated multi-step cascading replay engine across downstream dependencies.
+  - Side-effect dry-run guard (`@traced(is_idempotent=False)`).
 
 ---
 
@@ -421,16 +435,16 @@ python -m unittest discover -s tests -p "test_*.py"
 
 Looking for a place to start? Here are four high-impact, well-scoped tasks ready for contributors:
 
-1. **Issue #1: Add CLI Trace Export (`athar export`)**
+1. **[Issue #2: Add CLI Trace Export (`athar export`)](https://github.com/Abdur-Rafay-AR/athar/issues/2)**
    - *Goal*: Add a CLI flag to export recorded traces from SQLite to formatted JSON or OpenTelemetry trace format.
    - *Relevant files*: `src/athar/ui/app.py`, `src/athar/storage/sqlite_store.py`.
-2. **Issue #2: Native AutoGen Adapter**
+2. **[Issue #3: Native AutoGen Adapter](https://github.com/Abdur-Rafay-AR/athar/issues/3)**
    - *Goal*: Create `athar.adapters.autogen` to automatically wrap AutoGen's `ConversableAgent` message exchange loops.
    - *Relevant files*: `src/athar/adapters/`.
-3. **Issue #3: Timeline Text Search & Tag Filter in Web UI**
+3. **[Issue #4: Timeline Text Search & Tag Filter in Web UI](https://github.com/Abdur-Rafay-AR/athar/issues/4)**
    - *Goal*: Add a search bar to the center timeline in `index.html` to filter cards by function name, branch name, or execution error.
    - *Relevant files*: `src/athar/ui/static/index.html`.
-4. **Issue #4: Side-Effect Dry-Run Guard for Replay**
+4. **[Issue #5: Side-Effect Dry-Run Guard for Replay](https://github.com/Abdur-Rafay-AR/athar/issues/5)**
    - *Goal*: Add a `@traced(is_idempotent=False)` parameter to warn users in the UI before replaying functions that perform destructive side effects.
    - *Relevant files*: `src/athar/core/tracer.py`, `src/athar/core/replayer.py`.
 
