@@ -3,92 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Athar · Local-First Time-Travel Multi-Agent Debugger</title>
+    <title>Athar &middot; Local-First Multi-Agent Time-Travel Debugger</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #0B1015;
-            --bg-surface: #101820;
-            --bg-elevated: #16242F;
-            --bg-glass: rgba(16, 24, 32, 0.85);
-            --border-subtle: #1D2E3A;
+            --bg-base: #080C10;
+            --bg-surface: #0E141B;
+            --bg-elevated: #141C24;
+            --bg-card: #101720;
+            --bg-card-hover: #131E2A;
+            --bg-card-active: #152536;
+            --border-subtle: #1B2632;
+            --border-hover: #26384A;
             --border-focus: #00D6A3;
-            --text-main: #F4F7FA;
-            --text-muted: #8CA3A3;
-            --text-dim: #5C7575;
+            --text-main: #F1F5F9;
+            --text-muted: #94A3B8;
+            --text-dim: #64748B;
             --accent-teal: #00D6A3;
-            --accent-teal-glow: rgba(0, 214, 163, 0.22);
-            --accent-orange: #FF9F43;
-            --accent-purple: #9D72FF;
-            --accent-red: #FF5E7E;
-            --radius-md: 10px;
-            --radius-lg: 14px;
+            --accent-teal-dark: #0A2F25;
+            --accent-teal-glow: rgba(0, 214, 163, 0.18);
+            --accent-purple: #A78BFA;
+            --accent-purple-dark: #2E1B4E;
+            --accent-orange: #FB923C;
+            --accent-red: #F87171;
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Top Bar */
         header {
-            background: var(--bg-glass);
-            backdrop-filter: blur(12px);
+            background: var(--bg-surface);
             border-bottom: 1px solid var(--border-subtle);
-            padding: 12px 28px;
+            padding: 10px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 50;
+            height: 54px;
         }
 
         .brand-container {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             text-decoration: none;
             color: inherit;
         }
 
         .brand-logo {
-            width: 36px;
-            height: 36px;
+            width: 28px;
+            height: 28px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .brand-titles h1 {
-            font-size: 22px;
+            font-size: 16px;
             font-weight: 700;
-            letter-spacing: 0.02em;
+            letter-spacing: -0.01em;
             line-height: 1;
             color: var(--text-main);
+            display: inline-block;
         }
 
         .brand-tag {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.08em;
             color: var(--accent-teal);
-            margin-top: 2px;
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 6px;
+            background: var(--accent-teal-dark);
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(0, 214, 163, 0.25);
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
         }
 
         /* Buttons */
@@ -96,21 +110,27 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 14px;
+            padding: 6px 12px;
             border-radius: var(--radius-md);
-            font-size: 13px;
-            font-weight: 600;
+            font-size: 12px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.18s ease;
+            transition: all 0.15s ease;
             text-decoration: none;
             font-family: inherit;
             border: 1px solid transparent;
+            line-height: 1;
+        }
+
+        .btn svg {
+            flex-shrink: 0;
         }
 
         .btn-primary {
             background: var(--accent-teal);
-            color: #0B1015;
-            box-shadow: 0 0 16px var(--accent-teal-glow);
+            color: #080C10;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
         .btn-primary:hover {
             background: #1affc4;
@@ -123,26 +143,27 @@
             border-color: var(--border-subtle);
         }
         .btn-secondary:hover {
-            border-color: var(--accent-teal);
-            color: var(--accent-teal);
+            border-color: var(--border-hover);
+            color: #FFF;
+            background: #1A2530;
         }
 
-        .btn-danger {
-            background: rgba(255, 94, 126, 0.12);
-            color: var(--accent-red);
-            border-color: rgba(255, 94, 126, 0.25);
+        .btn-purple {
+            background: var(--accent-purple-dark);
+            color: var(--accent-purple);
+            border-color: rgba(167, 139, 250, 0.35);
         }
-        .btn-danger:hover {
-            background: var(--accent-red);
-            color: #fff;
+        .btn-purple:hover {
+            border-color: var(--accent-purple);
+            background: #392263;
         }
 
         /* Main Workspace Layout */
         .workspace {
             display: grid;
-            grid-template-columns: 320px 1fr 420px;
+            grid-template-columns: 300px 1fr 420px;
             flex: 1;
-            height: calc(100vh - 65px);
+            height: calc(100vh - 54px);
             overflow: hidden;
         }
 
@@ -156,7 +177,7 @@
         }
 
         .sidebar-header {
-            padding: 16px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
@@ -164,11 +185,14 @@
         }
 
         .sidebar-title {
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .trace-list {
@@ -177,29 +201,28 @@
             padding: 10px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         .trace-card {
-            background: var(--bg-elevated);
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
             border-radius: var(--radius-md);
-            padding: 12px;
+            padding: 10px 12px;
             cursor: pointer;
             transition: all 0.15s ease;
         }
         .trace-card:hover {
-            border-color: var(--accent-teal);
-            transform: translateX(2px);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
         }
         .trace-card.active {
             border-color: var(--accent-teal);
-            background: #142833;
-            box-shadow: 0 0 12px rgba(0, 214, 163, 0.15);
+            background: var(--bg-card-active);
         }
 
         .trace-card-title {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-main);
             margin-bottom: 4px;
@@ -207,10 +230,17 @@
         }
 
         .trace-card-meta {
-            font-size: 12px;
-            color: var(--text-muted);
+            font-size: 11px;
+            color: var(--text-dim);
             display: flex;
+            align-items: center;
             gap: 10px;
+        }
+
+        .trace-card-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         /* Center: Timeline & DAG */
@@ -222,17 +252,18 @@
         }
 
         .timeline-header {
-            padding: 16px 24px;
+            padding: 12px 20px;
             background: var(--bg-surface);
             border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            min-height: 52px;
         }
 
         .stats-strip {
             display: flex;
-            gap: 18px;
+            gap: 16px;
         }
 
         .stat-item {
@@ -240,84 +271,91 @@
             flex-direction: column;
         }
         .stat-label {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.05em;
             color: var(--text-dim);
+            font-weight: 600;
         }
         .stat-value {
-            font-size: 15px;
-            font-weight: 700;
+            font-size: 13px;
+            font-weight: 600;
             color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .nodes-container {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 10px;
             position: relative;
         }
 
         .node-step-card {
-            background: var(--bg-surface);
+            background: var(--bg-card);
             border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-lg);
-            padding: 16px;
-            transition: all 0.2s ease;
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            transition: all 0.15s ease;
             cursor: pointer;
             position: relative;
         }
         .node-step-card:hover {
-            border-color: var(--accent-teal);
-            box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+            border-color: var(--border-hover);
+            background: var(--bg-card-hover);
         }
         .node-step-card.selected {
             border-color: var(--accent-teal);
-            background: #12212b;
+            background: #0D1C24;
         }
 
         .node-step-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .node-badge-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
         }
 
         .badge {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            line-height: 1.3;
         }
-        .badge-main { background: #16303d; color: var(--accent-teal); }
-        .badge-fork { background: #351c4a; color: var(--accent-purple); }
-        .badge-latency { background: #22292f; color: var(--accent-orange); }
+        .badge-main { background: #0E2429; color: var(--accent-teal); border: 1px solid rgba(0, 214, 163, 0.2); }
+        .badge-fork { background: #26163E; color: var(--accent-purple); border: 1px solid rgba(167, 139, 250, 0.3); }
+        .badge-latency { background: #1C232B; color: var(--accent-orange); border: 1px solid #2B3846; }
 
         .node-func-name {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 600;
             color: var(--text-main);
         }
 
         .node-preview-box {
-            background: #090e13;
-            border-radius: 6px;
-            padding: 8px 12px;
+            background: #06090D;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            padding: 6px 10px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-top: 6px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -333,11 +371,12 @@
         }
 
         .inspector-header {
-            padding: 16px;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border-subtle);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            height: 52px;
         }
 
         .inspector-content {
@@ -350,41 +389,44 @@
         }
 
         .inspector-section-title {
-            font-size: 12px;
-            font-weight: 700;
+            font-size: 11px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--text-muted);
+            letter-spacing: 0.05em;
+            color: var(--text-dim);
             margin-bottom: 6px;
         }
 
         pre.code-block {
-            background: #080d12;
+            background: #05080C;
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            color: #d1dbe3;
+            font-size: 11.5px;
+            color: #CBD5E1;
             overflow-x: auto;
-            max-height: 200px;
+            max-height: 180px;
+            line-height: 1.45;
         }
 
         textarea.mutation-input {
             width: 100%;
             height: 120px;
-            background: #080d12;
+            background: #05080C;
             border: 1px solid var(--border-subtle);
-            border-radius: 8px;
-            padding: 12px;
-            color: #00D6A3;
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            color: var(--accent-teal);
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12.5px;
+            font-size: 11.5px;
+            line-height: 1.45;
             resize: vertical;
         }
         textarea.mutation-input:focus {
             outline: none;
             border-color: var(--accent-teal);
+            box-shadow: 0 0 0 1px var(--accent-teal);
         }
 
         /* Empty states */
@@ -395,19 +437,10 @@
             justify-content: center;
             height: 100%;
             text-align: center;
-            padding: 40px;
-            color: var(--text-muted);
-            gap: 14px;
-        }
-
-        /* Branching visual line */
-        .branch-stem {
-            position: absolute;
-            left: 32px;
-            top: -16px;
-            width: 2px;
-            height: 16px;
-            background: var(--border-subtle);
+            padding: 32px;
+            color: var(--text-dim);
+            gap: 10px;
+            font-size: 13px;
         }
     </style>
 </head>
@@ -415,33 +448,33 @@
     <header>
         <div class="brand-container">
             <div class="brand-logo">
-                <svg width="34" height="34" viewBox="0 0 136 136" fill="none">
-                    <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96" stroke="#F4F7FA" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+                <svg width="26" height="26" viewBox="0 0 136 136" fill="none">
+                    <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96" stroke="#F1F5F9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
                     <circle cx="68" cy="14" r="8" fill="#00D6A3"/>
-                    <circle cx="68" cy="55" r="7" fill="#00D6A3" stroke="#101820" stroke-width="3"/>
+                    <circle cx="68" cy="55" r="7" fill="#00D6A3" stroke="#080C10" stroke-width="3"/>
                     <circle cx="32" cy="98" r="8" fill="#00D6A3"/>
                     <circle cx="68" cy="106" r="8" fill="#00D6A3"/>
                     <circle cx="104" cy="98" r="8" fill="#00D6A3"/>
                 </svg>
             </div>
             <div class="brand-titles">
-                <h1>athar</h1>
-                <div class="brand-tag">FORK · EDIT · REPLAY</div>
+                <h1>Athar</h1>
+                <div class="brand-tag">FORK &middot; EDIT &middot; REPLAY</div>
             </div>
         </div>
 
         <div class="header-actions">
-            <button class="btn btn-secondary" id="compare-branches-btn" onclick="openDiffModal()" style="display:none; border-color:#9D72FF; color:#C4A1FF;">
-                <span>🌿</span> Compare Branches
+            <button class="btn btn-purple" id="compare-branches-btn" onclick="openDiffModal()" style="display:none;">
+                <span id="icon-compare"></span> Compare Branches
             </button>
             <button class="btn btn-secondary" onclick="seedSampleTrace()">
-                <span>⚡</span> Seed Sample Trace
+                <span id="icon-sparkles"></span> Seed Sample Trace
             </button>
             <button class="btn btn-secondary" onclick="fetchTraces()">
-                <span>↻</span> Refresh
+                <span id="icon-refresh"></span> Refresh
             </button>
             <a href="https://github.com/Abdur-Rafay-AR/athar" target="_blank" class="btn btn-secondary">
-                GitHub
+                <span id="icon-github"></span> GitHub
             </a>
         </div>
     </header>
@@ -450,7 +483,7 @@
         <!-- Sidebar: Trace history -->
         <aside class="sidebar">
             <div class="sidebar-header">
-                <span class="sidebar-title">Traces</span>
+                <span class="sidebar-title"><span id="icon-traces-title"></span> Traces</span>
                 <span id="trace-count-pill" class="badge badge-main">0</span>
             </div>
             <div class="trace-list" id="trace-list">
@@ -464,8 +497,8 @@
         <main class="timeline-area">
             <div class="timeline-header">
                 <div>
-                    <h2 id="active-trace-title" style="font-size: 18px; font-weight: 700;">Select a Trace</h2>
-                    <span id="active-trace-subtitle" style="font-size: 12px; color: var(--text-muted);">No trace selected</span>
+                    <h2 id="active-trace-title" style="font-size: 15px; font-weight: 600;">Select a Trace</h2>
+                    <span id="active-trace-subtitle" style="font-size: 11px; color: var(--text-dim); font-family:'JetBrains Mono', monospace;">No trace selected</span>
                 </div>
                 <div class="stats-strip" id="active-trace-stats" style="display: none;">
                     <div class="stat-item">
@@ -485,14 +518,6 @@
 
             <div class="nodes-container" id="nodes-container">
                 <div class="empty-placeholder">
-                    <svg width="48" height="48" viewBox="0 0 136 136" fill="none" opacity="0.4">
-                        <path d="M68 16 V55 M68 55 L32 96 M68 55 V104 M68 55 L104 96" stroke="#8CA3A3" stroke-width="4"/>
-                        <circle cx="68" cy="14" r="7" fill="#00D6A3"/>
-                        <circle cx="68" cy="55" r="6" fill="#00D6A3"/>
-                        <circle cx="32" cy="98" r="7" fill="#00D6A3"/>
-                        <circle cx="68" cy="106" r="7" fill="#00D6A3"/>
-                        <circle cx="104" cy="98" r="7" fill="#00D6A3"/>
-                    </svg>
                     <p>Pick a trace from the left or run your code instrumented with <code>@traced</code>.</p>
                 </div>
             </div>
@@ -501,7 +526,7 @@
         <!-- Right: Inspector & Fork-and-Replay -->
         <aside class="inspector-panel">
             <div class="inspector-header">
-                <span class="sidebar-title">Step Inspector</span>
+                <span class="sidebar-title"><span id="icon-inspector-title"></span> Step Inspector</span>
                 <span id="inspector-node-id" class="badge badge-main" style="display:none;"></span>
             </div>
 
@@ -513,7 +538,32 @@
         </aside>
     </div>
 
+    <!-- Lucide Icon Inline Helpers (Zero External Dependency, 100% Reliable Offline) -->
     <script>
+        const ICONS = {
+            'compare': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M13 6h3a2 2 0 0 1 2 2v7"/><path d="M11 18H8a2 2 0 0 1-2-2V9"/></svg>',
+            'sparkles': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>',
+            'refresh': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
+            'github': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>',
+            'layers': '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>',
+            'clock': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+            'calendar': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>',
+            'branch': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>',
+            'fork': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v2c0 .6-.4 1-1 1H7c-.6 0-1-.4-1-1V9"/><path d="M12 12v3"/></svg>',
+            'cpu': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>',
+            'edit': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>',
+            'check': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>',
+            'alert': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
+            'loader': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>'
+        };
+
+        document.getElementById('icon-compare').innerHTML = ICONS.compare;
+        document.getElementById('icon-sparkles').innerHTML = ICONS.sparkles;
+        document.getElementById('icon-refresh').innerHTML = ICONS.refresh;
+        document.getElementById('icon-github').innerHTML = ICONS.github;
+        document.getElementById('icon-traces-title').innerHTML = ICONS.layers;
+        document.getElementById('icon-inspector-title').innerHTML = ICONS.edit;
+
         let currentTraceId = null;
         let currentNodes = [];
         let selectedNode = null;
@@ -532,13 +582,13 @@
                     container.innerHTML = `
                         <div class="empty-placeholder">
                             <p>No traces recorded yet.</p>
-                            <button class="btn btn-primary" onclick="seedSampleTrace()">Seed Demo Trace</button>
+                            <button class="btn btn-primary" onclick="seedSampleTrace()">${ICONS.sparkles} Seed Sample Trace</button>
                         </div>
                     `;
                     return;
                 }
 
-                data.traces.forEach((trace, idx) => {
+                data.traces.forEach((trace) => {
                     const card = document.createElement('div');
                     card.className = `trace-card ${trace.trace_id === currentTraceId ? 'active' : ''}`;
                     card.onclick = () => selectTrace(trace.trace_id, trace.name, trace);
@@ -547,9 +597,9 @@
                     card.innerHTML = `
                         <div class="trace-card-title">${escapeHtml(trace.name || trace.trace_id)}</div>
                         <div class="trace-card-meta">
-                            <span>⚡ ${trace.node_count || 0} steps</span>
-                            <span>⏱️ ${(trace.total_latency || 0).toFixed(2)}s</span>
-                            <span>📅 ${dateStr}</span>
+                            <span>${ICONS.layers} ${trace.node_count || 0} steps</span>
+                            <span>${ICONS.clock} ${(trace.total_latency || 0).toFixed(2)}s</span>
+                            <span>${ICONS.calendar} ${dateStr}</span>
                         </div>
                     `;
                     container.appendChild(card);
@@ -576,7 +626,6 @@
                 const data = await res.json();
                 currentNodes = data.nodes || [];
 
-                // Update summary stats
                 let totalLat = 0;
                 let totalCost = 0;
                 currentNodes.forEach(n => {
@@ -587,7 +636,6 @@
                 document.getElementById('stat-latency').textContent = `${totalLat.toFixed(2)}s`;
                 document.getElementById('stat-cost').textContent = `$${totalCost.toFixed(4)}`;
 
-                // Check for multiple branches
                 const branchSet = new Set(currentNodes.map(n => n.branch_id || 'main'));
                 const diffBtn = document.getElementById('compare-branches-btn');
                 if (diffBtn) {
@@ -616,7 +664,7 @@
 
                 const isFork = node.branch_id && node.branch_id !== 'main';
                 const branchBadge = isFork 
-                    ? `<span class="badge badge-fork">🌿 ${escapeHtml(node.branch_id)}</span>`
+                    ? `<span class="badge badge-fork">${ICONS.branch} ${escapeHtml(node.branch_id)}</span>`
                     : `<span class="badge badge-main">main</span>`;
 
                 card.innerHTML = `
@@ -624,11 +672,11 @@
                         <span class="node-func-name">#${idx + 1} &nbsp;${escapeHtml(node.func_name)}</span>
                         <div class="node-badge-group">
                             ${branchBadge}
-                            <span class="badge badge-latency">${(node.latency || 0).toFixed(3)}s</span>
+                            <span class="badge badge-latency">${ICONS.clock} ${(node.latency || 0).toFixed(3)}s</span>
                         </div>
                     </div>
                     <div class="node-preview-box">
-                        Hash: ${escapeHtml(node.step_hash ? node.step_hash.substring(0, 20) + '...' : 'none')}
+                        Hash: ${escapeHtml(node.step_hash ? node.step_hash.substring(0, 24) + '...' : 'none')}
                     </div>
                 `;
                 container.appendChild(card);
@@ -660,19 +708,19 @@
 
             const isLiveCallable = liveRegistry[node.func_name] !== undefined || liveRegistry[node.func_name.replace(' (forked)', '')] !== undefined;
             const liveBadge = isLiveCallable 
-                ? `<span class="badge" style="background:#13382c; color:#00D6A3; border:1px solid #00D6A3;">⚡ Live Callable Registered</span>`
-                : `<span class="badge" style="background:#202933; color:#8CA3A3;">📝 State Mutation Mode</span>`;
+                ? `<span class="badge" style="background:#0E2A22; color:#00D6A3; border:1px solid rgba(0, 214, 163, 0.35);">${ICONS.cpu} Live Callable</span>`
+                : `<span class="badge" style="background:#19232C; color:#94A3B8; border:1px solid #1B2632;">${ICONS.edit} State Mutation</span>`;
 
             const panel = document.getElementById('inspector-content');
             panel.innerHTML = `
                 <div>
-                    <div class="inspector-section-title">Function & Timing</div>
+                    <div class="inspector-section-title">Function &amp; Timing</div>
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-                        <span style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 14px;">${escapeHtml(node.func_name)}</span>
+                        <span style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 13px;">${escapeHtml(node.func_name)}</span>
                         ${liveBadge}
                     </div>
-                    <p style="font-size: 12px; color: var(--text-muted);">
-                        Latency: <strong>${(node.latency || 0).toFixed(4)}s</strong> &nbsp;|&nbsp; Cost: <strong>$${(node.cost || 0).toFixed(4)}</strong>
+                    <p style="font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
+                        Latency: <strong style="color:var(--text-main);">${(node.latency || 0).toFixed(4)}s</strong> &nbsp;|&nbsp; Cost: <strong style="color:var(--text-main);">$${(node.cost || 0).toFixed(4)}</strong>
                     </p>
                 </div>
 
@@ -688,16 +736,16 @@
 
                 <div>
                     <div class="inspector-section-title">Fork &amp; Replay from this step</div>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                        ${isLiveCallable ? '⚡ <strong>Live Replay Enabled:</strong> Editing inputs will execute the real Python function and measure new outputs.' : 'Modify the input or state below and hit replay to fork execution without re-running earlier steps.'}
+                    <p style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 8px;">
+                        ${isLiveCallable ? '<strong>Live Replay Enabled:</strong> Editing inputs will re-execute the real Python callable and record the output.' : 'Modify the input or state below and trigger a replay to fork execution without re-running earlier steps.'}
                     </p>
                     <textarea id="fork-mutation-textarea" class="mutation-input">${escapeHtml(JSON.stringify(node.input_data || node.state_snapshot || {}, null, 2))}</textarea>
                     <div style="margin-top: 10px; display: flex; gap: 8px;">
                         <button class="btn btn-primary" onclick="executeFork('${node.node_id}')">
-                            🌿 Execute Fork &amp; Replay
+                            ${ICONS.fork} Execute Fork &amp; Replay
                         </button>
                     </div>
-                    <div id="replay-status-banner" style="margin-top:10px; display:none; padding:10px; border-radius:8px; font-size:12px;"></div>
+                    <div id="replay-status-banner" style="margin-top:10px; display:none; padding:8px 12px; border-radius:var(--radius-md); font-size:11.5px; font-family:'JetBrains Mono', monospace;"></div>
                 </div>
             `;
         }
@@ -715,10 +763,12 @@
 
             try {
                 if (statusBanner) {
-                    statusBanner.style.display = 'block';
-                    statusBanner.style.background = '#162934';
+                    statusBanner.style.display = 'flex';
+                    statusBanner.style.alignItems = 'center';
+                    statusBanner.style.gap = '6px';
+                    statusBanner.style.background = '#141E28';
                     statusBanner.style.color = '#00D6A3';
-                    statusBanner.textContent = '⏳ Executing replay...';
+                    statusBanner.innerHTML = `${ICONS.loader} Executing replay...`;
                 }
 
                 const res = await fetch(`/api/replay/${nodeId}`, {
@@ -733,16 +783,16 @@
                 if (res.ok) {
                     const mode = resData.data ? resData.data.execution_mode : 'completed';
                     if (statusBanner) {
-                        statusBanner.style.background = '#103328';
+                        statusBanner.style.background = '#0E2A22';
                         statusBanner.style.color = '#1affc4';
-                        statusBanner.innerHTML = `✅ <strong>Replay Succeeded (${mode})!</strong> Branch created.`;
+                        statusBanner.innerHTML = `${ICONS.check} <strong>Replay Succeeded (${mode})</strong>`;
                     }
                     await selectTrace(currentTraceId, document.getElementById('active-trace-title').textContent);
                 } else {
                     if (statusBanner) {
-                        statusBanner.style.background = '#3d1620';
-                        statusBanner.style.color = '#ff5e7e';
-                        statusBanner.textContent = `❌ Failed: ${resData.detail}`;
+                        statusBanner.style.background = '#2E141B';
+                        statusBanner.style.color = '#F87171';
+                        statusBanner.innerHTML = `${ICONS.alert} Failed: ${escapeHtml(resData.detail)}`;
                     }
                 }
             } catch (err) {
@@ -811,13 +861,13 @@
             if (!currentTraceId || !selA || !selB) return;
 
             const contentArea = document.getElementById('diff-results-content');
-            contentArea.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-muted);">Calculating branch delta...</div>';
+            contentArea.innerHTML = '<div style="padding:20px; text-align:center; color:var(--text-dim);">' + ICONS.loader + ' Calculating branch delta...</div>';
 
             try {
                 const res = await fetch(`/api/traces/${currentTraceId}/diff?branch_a=${encodeURIComponent(selA)}&branch_b=${encodeURIComponent(selB)}`);
                 const data = await res.json();
                 if (!res.ok) {
-                    contentArea.innerHTML = `<div style="padding:20px; color:#ff5e7e;">Error: ${escapeHtml(data.detail)}</div>`;
+                    contentArea.innerHTML = `<div style="padding:20px; color:#F87171;">Error: ${escapeHtml(data.detail)}</div>`;
                     return;
                 }
 
@@ -825,44 +875,44 @@
                 const latDelta = summary.delta_latency;
                 const costDelta = summary.delta_cost;
 
-                const latColor = latDelta <= 0 ? '#00D6A3' : '#ff9f43';
+                const latColor = latDelta <= 0 ? '#00D6A3' : '#FB923C';
                 const latSign = latDelta > 0 ? '+' : '';
-                const costColor = costDelta <= 0 ? '#00D6A3' : '#ff5e7e';
+                const costColor = costDelta <= 0 ? '#00D6A3' : '#F87171';
                 const costSign = costDelta > 0 ? '+' : '';
 
                 let stepsHtml = '';
                 data.step_diffs.forEach(sd => {
                     const diffText = sd.output_diff || (sd.is_identical ? '(Outputs are identical)' : 'No common output');
-                    const diffColor = sd.is_identical ? '#8CA3A3' : '#00D6A3';
+                    const diffColor = sd.is_identical ? '#94A3B8' : '#00D6A3';
 
                     stepsHtml += `
-                        <div style="background:#090e13; border:1px solid var(--border-subtle); border-radius:8px; padding:12px; margin-bottom:12px;">
-                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; font-weight:600;">
+                        <div style="background:#06090D; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px; margin-bottom:10px;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:12px; font-weight:600;">
                                 <span>Step #${sd.index}: ${escapeHtml(sd.step_a ? sd.step_a.func_name : '')} vs ${escapeHtml(sd.step_b ? sd.step_b.func_name : '')}</span>
-                                <span style="font-size:11px; color:${diffColor}">${sd.is_identical ? 'Identical' : 'Divergent'}</span>
+                                <span style="font-size:10px; color:${diffColor}">${sd.is_identical ? 'Identical' : 'Divergent'}</span>
                             </div>
-                            <pre class="code-block" style="max-height:140px; margin:0;">${escapeHtml(diffText)}</pre>
+                            <pre class="code-block" style="max-height:120px; margin:0;">${escapeHtml(diffText)}</pre>
                         </div>
                     `;
                 });
 
                 contentArea.innerHTML = `
-                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:20px;">
-                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
-                            <div class="stat-label">Δ Latency</div>
-                            <div style="font-size:18px; font-weight:700; color:${latColor}">${latSign}${latDelta.toFixed(3)}s</div>
+                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:16px;">
+                        <div style="background:#141C24; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px;">
+                            <div class="stat-label">&Delta; Latency</div>
+                            <div style="font-size:16px; font-weight:700; color:${latColor}; font-family:'JetBrains Mono';">${latSign}${latDelta.toFixed(3)}s</div>
                         </div>
-                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
-                            <div class="stat-label">Δ Cost</div>
-                            <div style="font-size:18px; font-weight:700; color:${costColor}">${costSign}$${costDelta.toFixed(4)}</div>
+                        <div style="background:#141C24; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px;">
+                            <div class="stat-label">&Delta; Cost</div>
+                            <div style="font-size:16px; font-weight:700; color:${costColor}; font-family:'JetBrains Mono';">${costSign}$${costDelta.toFixed(4)}</div>
                         </div>
-                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                        <div style="background:#141C24; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px;">
                             <div class="stat-label">Steps (A / B)</div>
-                            <div style="font-size:18px; font-weight:700; color:#F4F7FA;">${summary.steps_branch_a} / ${summary.steps_branch_b}</div>
+                            <div style="font-size:16px; font-weight:700; color:#F1F5F9; font-family:'JetBrains Mono';">${summary.steps_branch_a} / ${summary.steps_branch_b}</div>
                         </div>
-                        <div style="background:#16242F; border:1px solid var(--border-subtle); border-radius:8px; padding:12px;">
+                        <div style="background:#141C24; border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:10px 12px;">
                             <div class="stat-label">Fork Point</div>
-                            <div style="font-size:14px; font-weight:600; color:#00D6A3; font-family:'JetBrains Mono';">${summary.fork_point ? escapeHtml(summary.fork_point.func_name) : 'Root / Direct'}</div>
+                            <div style="font-size:13px; font-weight:600; color:#00D6A3; font-family:'JetBrains Mono'; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${summary.fork_point ? escapeHtml(summary.fork_point.func_name) : 'Root'}</div>
                         </div>
                     </div>
                     <div>
@@ -871,7 +921,7 @@
                     </div>
                 `;
             } catch (err) {
-                contentArea.innerHTML = `<div style="padding:20px; color:#ff5e7e;">Error: ${err.message}</div>`;
+                contentArea.innerHTML = `<div style="padding:20px; color:#F87171;">Error: ${err.message}</div>`;
             }
         }
 
@@ -879,31 +929,34 @@
     </script>
 
     <!-- Branch Diff Modal -->
-    <div id="diff-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(8px); z-index:100; align-items:center; justify-content:center;">
-        <div style="background:#101820; border:1px solid var(--border-subtle); border-radius:14px; width:800px; max-width:92vw; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-            <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="font-size:16px; font-weight:700; color:#F4F7FA; display:flex; align-items:center; gap:8px;">
-                    <span>🌿</span> Compare Branches (Trace Diff)
+    <div id="diff-modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center;">
+        <div style="background:#0E141B; border:1px solid var(--border-subtle); border-radius:var(--radius-lg); width:780px; max-width:92vw; max-height:86vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 36px rgba(0,0,0,0.65);">
+            <div style="padding:14px 18px; border-bottom:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="font-size:14px; font-weight:600; color:#F1F5F9; display:flex; align-items:center; gap:8px;">
+                    <span id="modal-icon-diff"></span> Compare Branches (Trace Diff)
                 </h3>
-                <button onclick="closeDiffModal()" style="background:transparent; border:none; color:var(--text-muted); font-size:18px; cursor:pointer;">&times;</button>
+                <button onclick="closeDiffModal()" style="background:transparent; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1;">&times;</button>
             </div>
 
-            <div style="padding:16px 20px; border-bottom:1px solid var(--border-subtle); display:flex; gap:16px; align-items:center; background:#0B1015;">
+            <div style="padding:12px 18px; border-bottom:1px solid var(--border-subtle); display:flex; gap:16px; align-items:center; background:#080C10;">
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:13px; color:var(--text-muted);">Baseline (A):</span>
-                    <select id="diff-branch-a" onchange="runBranchDiff()" style="background:#16242F; color:#F4F7FA; border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-family:inherit;"></select>
+                    <span style="font-size:12px; color:var(--text-dim);">Baseline (A):</span>
+                    <select id="diff-branch-a" onchange="runBranchDiff()" style="background:#141C24; color:#F1F5F9; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:4px 8px; font-family:inherit; font-size:12px;"></select>
                 </div>
-                <span style="color:var(--text-muted);">vs</span>
+                <span style="color:var(--text-dim); font-size:12px;">vs</span>
                 <div style="display:flex; align-items:center; gap:8px;">
-                    <span style="font-size:13px; color:var(--text-muted);">Comparison (B):</span>
-                    <select id="diff-branch-b" onchange="runBranchDiff()" style="background:#16242F; color:#00D6A3; border:1px solid var(--border-subtle); border-radius:6px; padding:6px 10px; font-family:inherit; font-weight:600;"></select>
+                    <span style="font-size:12px; color:var(--text-dim);">Comparison (B):</span>
+                    <select id="diff-branch-b" onchange="runBranchDiff()" style="background:#141C24; color:#00D6A3; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:4px 8px; font-family:inherit; font-size:12px; font-weight:600;"></select>
                 </div>
             </div>
 
-            <div id="diff-results-content" style="flex:1; overflow-y:auto; padding:20px;">
+            <div id="diff-results-content" style="flex:1; overflow-y:auto; padding:18px;">
                 <!-- Populated dynamically by runBranchDiff() -->
             </div>
         </div>
     </div>
+    <script>
+        document.getElementById('modal-icon-diff').innerHTML = ICONS.compare;
+    </script>
 </body>
 </html>
