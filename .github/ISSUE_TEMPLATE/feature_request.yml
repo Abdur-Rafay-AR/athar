@@ -1,0 +1,35 @@
+name: 🚀 Feature Request
+description: Suggest an idea or enhancement for Athar.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We love community feedback! Please explain the problem you are trying to solve and how Athar could help.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear and concise description of the limitation or pain point.
+      placeholder: I'm always frustrated when debugging multi-step loops because...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the Solution You'd Like
+      description: A clear explanation of what you want to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe Alternatives You've Considered
+      description: Any alternative solutions or workarounds you've explored.
+  - type: checkboxes
+    id: willing_to_contribute
+    attributes:
+      label: Willing to Contribute?
+      options:
+        - label: I would be interested in submitting a Pull Request for this feature.

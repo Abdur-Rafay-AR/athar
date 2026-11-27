@@ -1,0 +1,47 @@
+name: 🐛 Bug Report
+description: Create a report to help us fix a bug or unexpected behavior in Athar.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please provide as much context as possible so we can reproduce and fix it.
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Bug
+      description: A clear and concise description of what went wrong.
+      placeholder: When calling @traced on an async function with nested loops, ...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: A minimal reproducible example or step-by-step instructions.
+      placeholder: |
+        1. Run `python my_agent.py`
+        2. Open Athar UI at `http://localhost:4173`
+        3. Click 'Execute Fork & Replay' on node X
+        4. See error: ...
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment & Versions
+      description: OS version, Python version, Athar version, and relevant framework versions (e.g. LangChain, CrewAI).
+      value: |
+        - Athar Version: 0.1.0
+        - Python Version: 3.11.x
+        - OS: [e.g. Windows 11 / Ubuntu 22.04 / macOS Sonoma]
+        - Agent Framework: [e.g. Raw Python / LangChain 0.2 / Crucible]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Logs or Traceback
+      description: Copy and paste relevant terminal logs or error stack traces.
+      render: shell

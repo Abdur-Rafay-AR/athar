@@ -1,0 +1,35 @@
+name: 🔌 Framework Adapter Request / Proposal
+description: Propose or discuss a native adapter for an agent framework (e.g. AutoGen, CrewAI, LlamaIndex).
+title: "[Adapter]: "
+labels: ["adapter", "enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Athar aims to support all major agentic AI frameworks with first-class, drop-in adapters.
+  - type: input
+    id: framework_name
+    attributes:
+      label: Framework Name
+      placeholder: e.g. AutoGen, CrewAI, LlamaIndex, Semantic Kernel
+    validations:
+      required: true
+  - type: textarea
+    id: integration_boundary
+    attributes:
+      label: How should Athar hook into this framework?
+      description: Describe callback interfaces, tool dispatch hooks, or execution decorators provided by the framework.
+      placeholder: AutoGen exposes `register_reply` and message callbacks on `ConversableAgent`...
+    validations:
+      required: true
+  - type: textarea
+    id: minimal_example
+    attributes:
+      label: Proposed Developer Experience
+      description: What should the 1-line or 2-line integration look like for developers?
+      placeholder: |
+        from athar.adapters.autogen import AtharAutoGenAdapter
+        adapter = AtharAutoGenAdapter(trace_name="Dialogue Run")
+        user_proxy.initiate_chat(assistant, message="...", callbacks=[adapter])
+    validations:
+      required: true
