@@ -158,6 +158,31 @@
             background: #392263;
         }
 
+        .btn-icon-danger {
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            color: var(--text-dim);
+            padding: 3px 5px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            line-height: 1;
+        }
+        .btn-icon-danger:hover {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--accent-red);
+            border-color: rgba(248, 113, 113, 0.3);
+        }
+
+        .btn-danger-hover:hover {
+            border-color: rgba(248, 113, 113, 0.4) !important;
+            color: var(--accent-red) !important;
+            background: rgba(248, 113, 113, 0.1) !important;
+        }
+
         /* Main Workspace Layout */
         .workspace {
             display: grid;
@@ -500,19 +525,24 @@
                     <h2 id="active-trace-title" style="font-size: 15px; font-weight: 600;">Select a Trace</h2>
                     <span id="active-trace-subtitle" style="font-size: 11px; color: var(--text-dim); font-family:'JetBrains Mono', monospace;">No trace selected</span>
                 </div>
-                <div class="stats-strip" id="active-trace-stats" style="display: none;">
-                    <div class="stat-item">
-                        <span class="stat-label">Steps</span>
-                        <span class="stat-value" id="stat-steps">0</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div class="stats-strip" id="active-trace-stats" style="display: none;">
+                        <div class="stat-item">
+                            <span class="stat-label">Steps</span>
+                            <span class="stat-value" id="stat-steps">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Latency</span>
+                            <span class="stat-value" id="stat-latency">0.00s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Cost</span>
+                            <span class="stat-value" id="stat-cost">$0.00</span>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Latency</span>
-                        <span class="stat-value" id="stat-latency">0.00s</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">Cost</span>
-                        <span class="stat-value" id="stat-cost">$0.00</span>
-                    </div>
+                    <button class="btn btn-secondary btn-danger-hover" id="delete-active-trace-btn" style="display:none;" onclick="deleteTraceConfirm(currentTraceId)" title="Delete active trace session">
+                        <span id="icon-delete-active"></span> Delete Run
+                    </button>
                 </div>
             </div>
 
@@ -554,7 +584,8 @@
             'edit': '<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>',
             'check': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>',
             'alert': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>',
-            'loader': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>'
+            'loader': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
+            'trash': '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>'
         };
 
         document.getElementById('icon-compare').innerHTML = ICONS.compare;
@@ -563,6 +594,8 @@
         document.getElementById('icon-github').innerHTML = ICONS.github;
         document.getElementById('icon-traces-title').innerHTML = ICONS.layers;
         document.getElementById('icon-inspector-title').innerHTML = ICONS.edit;
+        const iconDelActive = document.getElementById('icon-delete-active');
+        if (iconDelActive) iconDelActive.innerHTML = ICONS.trash;
 
         let currentTraceId = null;
         let currentNodes = [];
@@ -595,7 +628,12 @@
 
                     const dateStr = trace.created_at ? new Date(trace.created_at).toLocaleTimeString() : 'Recent';
                     card.innerHTML = `
-                        <div class="trace-card-title">${escapeHtml(trace.name || trace.trace_id)}</div>
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:6px;">
+                            <div class="trace-card-title" style="flex:1;">${escapeHtml(trace.name || trace.trace_id)}</div>
+                            <button class="btn-icon-danger" title="Delete run" onclick="event.stopPropagation(); deleteTraceConfirm('${escapeHtml(trace.trace_id)}')">
+                                ${ICONS.trash}
+                            </button>
+                        </div>
                         <div class="trace-card-meta">
                             <span>${ICONS.layers} ${trace.node_count || 0} steps</span>
                             <span>${ICONS.clock} ${(trace.total_latency || 0).toFixed(2)}s</span>
@@ -620,6 +658,8 @@
             document.getElementById('active-trace-title').textContent = traceName || traceId;
             document.getElementById('active-trace-subtitle').textContent = `ID: ${traceId}`;
             document.getElementById('active-trace-stats').style.display = 'flex';
+            const delActiveBtn = document.getElementById('delete-active-trace-btn');
+            if (delActiveBtn) delActiveBtn.style.display = 'inline-flex';
 
             try {
                 const res = await fetch(`/api/traces/${traceId}/nodes`);
@@ -711,13 +751,23 @@
                 ? `<span class="badge" style="background:#0E2A22; color:#00D6A3; border:1px solid rgba(0, 214, 163, 0.35);">${ICONS.cpu} Live Callable</span>`
                 : `<span class="badge" style="background:#19232C; color:#94A3B8; border:1px solid #1B2632;">${ICONS.edit} State Mutation</span>`;
 
+            const isFork = node.branch_id && node.branch_id !== 'main';
+            const branchDeleteBtn = isFork
+                ? `<button class="btn btn-secondary btn-danger-hover" style="font-size:10.5px; padding:2px 8px; margin-left:6px;" onclick="deleteBranchConfirm('${escapeHtml(node.trace_id || currentTraceId)}', '${escapeHtml(node.branch_id)}')" title="Delete this branch and its steps">
+                     ${ICONS.trash} Delete Branch
+                   </button>`
+                : '';
+
             const panel = document.getElementById('inspector-content');
             panel.innerHTML = `
                 <div>
                     <div class="inspector-section-title">Function &amp; Timing</div>
-                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:8px;">
                         <span style="font-weight: 600; font-family: 'JetBrains Mono', monospace; font-size: 13px;">${escapeHtml(node.func_name)}</span>
-                        ${liveBadge}
+                        <div style="display:flex; align-items:center;">
+                            ${liveBadge}
+                            ${branchDeleteBtn}
+                        </div>
                     </div>
                     <p style="font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;">
                         Latency: <strong style="color:var(--text-main);">${(node.latency || 0).toFixed(4)}s</strong> &nbsp;|&nbsp; Cost: <strong style="color:var(--text-main);">$${(node.cost || 0).toFixed(4)}</strong>
@@ -925,6 +975,70 @@
             }
         }
 
+        async function deleteTraceConfirm(traceId) {
+            if (!traceId) return;
+            if (!confirm(`Are you sure you want to delete trace "${traceId}"? All recorded steps will be permanently removed.`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/traces/${encodeURIComponent(traceId)}`, { method: 'DELETE' });
+                if (res.ok) {
+                    if (currentTraceId === traceId) {
+                        currentTraceId = null;
+                        selectedNode = null;
+                        document.getElementById('active-trace-title').textContent = 'Select a Trace';
+                        document.getElementById('active-trace-subtitle').textContent = 'No trace selected';
+                        document.getElementById('active-trace-stats').style.display = 'none';
+                        const delBtn = document.getElementById('delete-active-trace-btn');
+                        if (delBtn) delBtn.style.display = 'none';
+                        document.getElementById('nodes-container').innerHTML = '<div class="empty-placeholder"><p>Pick a trace from the left or run your code instrumented with <code>@traced</code>.</p></div>';
+                        document.getElementById('inspector-content').innerHTML = '<div class="empty-placeholder"><p>Click any step in the timeline to inspect inputs, outputs, hashes, and initiate a fork-and-replay.</p></div>';
+                        document.getElementById('inspector-node-id').style.display = 'none';
+                        const diffBtn = document.getElementById('compare-branches-btn');
+                        if (diffBtn) diffBtn.style.display = 'none';
+                    }
+                    await fetchTraces();
+                } else {
+                    const errData = await res.json();
+                    alert(`Failed to delete trace: ${errData.detail || 'Unknown error'}`);
+                }
+            } catch (err) {
+                alert(`Error deleting trace: ${err.message}`);
+            }
+        }
+
+        async function deleteBranchConfirm(traceId, branchId) {
+            if (!traceId || !branchId || branchId === 'main') {
+                alert("Cannot delete the 'main' branch directly. Delete the entire trace instead.");
+                return;
+            }
+            if (!confirm(`Are you sure you want to delete branch "${branchId}"? All steps in this branch will be permanently removed.`)) {
+                return;
+            }
+            try {
+                const res = await fetch(`/api/traces/${encodeURIComponent(traceId)}/branches/${encodeURIComponent(branchId)}`, { method: 'DELETE' });
+                if (res.ok) {
+                    closeDiffModal();
+                    selectedNode = null;
+                    await selectTrace(traceId, document.getElementById('active-trace-title').textContent);
+                } else {
+                    const errData = await res.json();
+                    alert(`Failed to delete branch: ${errData.detail || 'Unknown error'}`);
+                }
+            } catch (err) {
+                alert(`Error deleting branch: ${err.message}`);
+            }
+        }
+
+        async function deleteBranchFromDiff() {
+            const selB = document.getElementById('diff-branch-b').value;
+            if (!selB || selB === 'main') {
+                alert("Cannot delete the 'main' branch.");
+                return;
+            }
+            await deleteBranchConfirm(currentTraceId, selB);
+        }
+
         fetchTraces();
     </script>
 
@@ -947,6 +1061,9 @@
                 <div style="display:flex; align-items:center; gap:8px;">
                     <span style="font-size:12px; color:var(--text-dim);">Comparison (B):</span>
                     <select id="diff-branch-b" onchange="runBranchDiff()" style="background:#141C24; color:#00D6A3; border:1px solid var(--border-subtle); border-radius:var(--radius-sm); padding:4px 8px; font-family:inherit; font-size:12px; font-weight:600;"></select>
+                    <button class="btn btn-secondary btn-danger-hover" id="diff-delete-branch-btn" onclick="deleteBranchFromDiff()" title="Delete comparison branch" style="font-size:11px; padding:4px 8px;">
+                        <span id="modal-icon-trash"></span> Delete Branch
+                    </button>
                 </div>
             </div>
 
@@ -957,6 +1074,8 @@
     </div>
     <script>
         document.getElementById('modal-icon-diff').innerHTML = ICONS.compare;
+        const modalIconTrash = document.getElementById('modal-icon-trash');
+        if (modalIconTrash) modalIconTrash.innerHTML = ICONS.trash;
     </script>
 </body>
 </html>

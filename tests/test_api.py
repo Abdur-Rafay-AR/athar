@@ -9,6 +9,7 @@ from athar.ui.app import (
     get_trace_nodes,
     replay_from_node,
     delete_trace,
+    delete_branch,
     seed_sample_trace,
     CreateTraceRequest,
     ReplayRequest,
@@ -72,6 +73,27 @@ class TestAtharAPI(unittest.TestCase):
 
         with self.assertRaises(HTTPException):
             get_trace("del_api_trace")
+
+    def test_delete_branch_endpoint(self):
+        store = TraceStore(db_path=self.temp_db_path)
+        store.ensure_trace("del_branch_trace")
+        store.insert_node("n_main", "del_branch_trace", None, "step1", {}, {}, branch_id="main")
+        store.insert_node("n_fork", "del_branch_trace", "n_main", "step2", {}, {}, branch_id="fork_to_delete")
+
+        # Deleting main branch should raise 400
+        with self.assertRaises(HTTPException) as cm:
+            delete_branch("del_branch_trace", "main")
+        self.assertEqual(cm.exception.status_code, 400)
+
+        # Deleting valid non-main branch should succeed
+        res = delete_branch("del_branch_trace", "fork_to_delete")
+        self.assertEqual(res["status"], "deleted")
+        self.assertEqual(res["branch_id"], "fork_to_delete")
+
+        # Deleting again should raise 404
+        with self.assertRaises(HTTPException) as cm:
+            delete_branch("del_branch_trace", "fork_to_delete")
+        self.assertEqual(cm.exception.status_code, 404)
 
 if __name__ == "__main__":
     unittest.main()

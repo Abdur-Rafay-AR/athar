@@ -23,9 +23,10 @@ ENV/
 *.sqlite
 *.sqlite3
 *.db
+*.db-*
 *.sqlite-wal
 *.sqlite-shm
-agent_traces.db
+agent_traces.db*
 
 # Testing and coverage
 .coverage

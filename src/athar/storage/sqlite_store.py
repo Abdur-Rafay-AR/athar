@@ -207,6 +207,16 @@ class TraceStore:
         self.conn.commit()
         return c.rowcount > 0
 
+    def delete_branch(self, trace_id: str, branch_id: str) -> bool:
+        """
+        Deletes all execution steps belonging to a specific branch in a trace.
+        Returns True if at least one step was deleted.
+        """
+        c = self.conn.cursor()
+        c.execute("DELETE FROM nodes WHERE trace_id = ? AND branch_id = ?", (trace_id, branch_id))
+        self.conn.commit()
+        return c.rowcount > 0
+
     def fork_node(self, node_id: str, new_state: Dict[str, Any], branch_name: Optional[str] = None) -> Dict[str, Any]:
         """
         Creates a branched execution node from an existing step with mutated state.

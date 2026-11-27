@@ -78,5 +78,19 @@ class TestTraceStore(unittest.TestCase):
         self.assertIsNone(self.store.get_trace("trace_del"))
         self.assertEqual(len(self.store.get_nodes("trace_del")), 0)
 
+    def test_delete_branch(self):
+        self.store.ensure_trace("trace_branch_del", name="Branch Delete Test")
+        self.store.insert_node("node_main", "trace_branch_del", None, "step1", {}, {}, branch_id="main")
+        self.store.insert_node("node_fork", "trace_branch_del", "node_main", "step2", {}, {}, branch_id="experimental")
+
+        # Deleting the experimental branch should leave main intact
+        self.assertTrue(self.store.delete_branch("trace_branch_del", "experimental"))
+        nodes = self.store.get_nodes("trace_branch_del")
+        self.assertEqual(len(nodes), 1)
+        self.assertEqual(nodes[0]["branch_id"], "main")
+
+        # Deleting non-existent branch returns False
+        self.assertFalse(self.store.delete_branch("trace_branch_del", "non_existent"))
+
 if __name__ == "__main__":
     unittest.main()

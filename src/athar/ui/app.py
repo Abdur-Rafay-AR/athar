@@ -130,6 +130,26 @@ def delete_trace(trace_id: str):
         raise HTTPException(status_code=404, detail="Trace not found")
     return {"status": "deleted", "trace_id": trace_id}
 
+@app.delete("/api/traces/{trace_id}/branches/{branch_id}")
+def delete_branch(trace_id: str, branch_id: str):
+    """
+    Deletes all nodes in a given execution branch of a trace.
+    Prevents direct deletion of 'main' unless deleting the full trace.
+    """
+    if branch_id == "main":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete the 'main' branch directly. Delete the entire trace instead."
+        )
+    store = get_store()
+    deleted = store.delete_branch(trace_id, branch_id)
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Branch '{branch_id}' not found in trace '{trace_id}'"
+        )
+    return {"status": "deleted", "trace_id": trace_id, "branch_id": branch_id}
+
 @app.post("/api/seed-sample")
 def seed_sample_trace():
     """Seeds a realistic sample multi-agent research trace for instant demonstration."""
