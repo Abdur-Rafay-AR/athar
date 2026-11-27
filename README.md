@@ -11,7 +11,7 @@
 
   [![PyPI version](https://img.shields.io/pypi/v/athar.svg?color=00D6A3)](https://pypi.org/project/athar/)
   [![Python](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-  [![Tests](https://img.shields.io/badge/tests-21%20passed-00D6A3.svg)](tests/)
+  [![Tests](https://img.shields.io/badge/tests-23%20passed-00D6A3.svg)](tests/)
   [![Storage: SQLite WAL](https://img.shields.io/badge/storage-SQLite%20WAL-101820.svg)](#architecture)
   [![License: MIT](https://img.shields.io/badge/license-MIT-00D6A3.svg)](LICENSE)
   [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
@@ -31,6 +31,10 @@
     <a href="#comparison-with-existing-tools">Comparison</a> &bull;
     <a href="#contributing-and-good-first-issues">Contributing</a>
   </p>
+
+  <br />
+
+  <img src="assets/demo.gif" alt="Athar Time-Travel Debugger Demo" width="100%" />
 
 </div>
 
