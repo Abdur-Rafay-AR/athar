@@ -6,7 +6,7 @@ Whether you are fixing a bug, adding an adapter for an agent framework, improvin
 
 ---
 
-## 🛠️ Development Environment Setup
+## Development Environment Setup
 
 ### 1. Prerequisites
 - **Python**: `>=3.9` (Python 3.9, 3.10, 3.11, or 3.12).
@@ -43,7 +43,7 @@ This installs:
 
 ---
 
-## 🧪 Running Tests
+## Running Tests
 
 Athar maintains a clean, dependency-light automated test suite under `tests/`.
 
@@ -61,7 +61,7 @@ Ensure all tests pass before submitting a pull request.
 
 ---
 
-## 🚀 Running the Local UI Server
+## Running the Local UI Server
 
 To start the local UI and API server during development:
 
@@ -77,7 +77,7 @@ Then visit **[http://localhost:4173](http://localhost:4173)** in your browser.
 
 ---
 
-## 🎯 Curated Good First Issues
+## Curated Good First Issues
 
 If you're looking for an actionable way to contribute, these well-scoped issues are ideal starting points:
 
@@ -97,13 +97,13 @@ If you're looking for an actionable way to contribute, these well-scoped issues 
 - **Difficulty**: Beginner-Friendly.
 
 ### Issue #4: Side-Effect Dry-Run Warning for Replay
-- **Description**: Add an `is_idempotent=False` flag to `@traced` to identify functions that cause external side effects (e.g., sending emails, database mutations). Display a confirmation prompt in the UI Step Inspector before replaying non-idempotent nodes.
+- **Description**: Add an `is_idempotent=False` flag to `@traced` to identify functions that cause external side effects (for example, sending emails, database mutations). Display a confirmation prompt in the UI Step Inspector before replaying non-idempotent nodes.
 - **Key files**: `src/athar/core/tracer.py`, `src/athar/core/replayer.py`, `src/athar/ui/static/index.html`.
 - **Difficulty**: Intermediate.
 
 ---
 
-## 📋 Pull Request & Code Guidelines
+## Pull Request & Code Guidelines
 
 1. **Branch Naming**:
    - `feat/feature-name` for new capabilities.
@@ -115,4 +115,4 @@ If you're looking for an actionable way to contribute, these well-scoped issues 
 3. **Storage Engine Integrity**:
    - Ensure SQLite WAL mode (`PRAGMA journal_mode=WAL;`) is preserved. Never add hard external database dependencies.
 4. **Commit Messages**:
-   - Write clear, imperative commit messages (e.g., `feat: add autogen adapter callback handler`, `fix: handle None parent_run_id in langchain adapter`).
+   - Write clear, imperative commit messages (for example, `feat: add autogen adapter callback handler`, `fix: handle None parent_run_id in langchain adapter`).

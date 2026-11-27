@@ -1,4 +1,4 @@
-name: 🔌 Framework Adapter Request / Proposal
+name: Framework Adapter Request / Proposal
 description: Propose or discuss a native adapter for an agent framework (e.g. AutoGen, CrewAI, LlamaIndex).
 title: "[Adapter]: "
 labels: ["adapter", "enhancement"]
