@@ -67,8 +67,8 @@ flowchart TD
         A1["Step 1: Planning"] --> A2["Step 2: Search Tool"]
         A2 --> A3["Step 12: Tool Malfunction"]
         A3 --> A4["Steps 13-30: Compounded Hallucinations"]
-        A4 -.->|Add print() & rerun| R1["Step 1: Re-executed ($$$)"]
-        R1 --> R2["Step 2: Re-executed ($$$)"]
+        A4 -.->|"Add print statements & rerun"| R1["Step 1: Re-executed (High Cost)"]
+        R1 --> R2["Step 2: Re-executed (High Cost)"]
         R2 --> R3["Step 12: Stochastic LLM behaves differently"]
     end
 
@@ -76,8 +76,8 @@ flowchart TD
         B1["Step 1: Planning"] --> B2["Step 2: Search Tool"]
         B2 --> B3["Step 12: Tool Malfunction"]
         B3 --> B4["Steps 13-30: Preserved in History"]
-        B3 ==>|1. Mutate Input / State| F1["Step 12 (Forked): Corrected Query"]
-        F1 ==>|2. Replay Forward Only| F2["Step 13 (Replay): Clean Context"]
+        B3 ==>|"1. Mutate Input / State"| F1["Step 12 (Forked): Corrected Query"]
+        F1 ==>|"2. Replay Forward Only"| F2["Step 13 (Replay): Clean Context"]
     end
 ```
 
@@ -94,10 +94,10 @@ Athar establishes a clean 5-stage lifecycle for agent execution:
 
 ```mermaid
 flowchart LR
-    R["1. RECORD\n(@traced / Callbacks)"] --> I["2. INSPECT\n(Timeline & Inspector)"]
-    I --> M["3. MODIFY\n(JSON State Editor)"]
-    M --> F["4. FORK\n(Branch in DAG)"]
-    F --> P["5. REPLAY\n(Execute Forward)"]
+    R["1. RECORD<br/>(@traced / Callbacks)"] --> I["2. INSPECT<br/>(Timeline & Inspector)"]
+    I --> M["3. MODIFY<br/>(JSON State Editor)"]
+    M --> F["4. FORK<br/>(Branch in DAG)"]
+    F --> P["5. REPLAY<br/>(Execute Forward)"]
 ```
 
 1. **RECORD**: Wrap Python functions with `@traced` or pass `AtharCallbackHandler` to LangChain/LangGraph. Execution steps, inputs, outputs, errors, latency, and SHA-256 content hashes are written to local SQLite via thread-safe WAL mode.
@@ -263,7 +263,7 @@ flowchart TD
     end
 
     subgraph Storage["Local Storage Layer"]
-        DB[("SQLite WAL Store\nagent_traces.db")]
+        DB[("SQLite WAL Store<br/>agent_traces.db")]
     end
 
     subgraph Presentation["Presentation Tier (FastAPI & Web UI)"]
