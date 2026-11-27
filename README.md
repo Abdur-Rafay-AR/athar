@@ -47,7 +47,7 @@ Debugging multi-agent systems is difficult because **errors compound**. When an 
 **Athar** solves this with local-first **time-travel debugging**:
 
 - **Record**: Captures prompts, tool calls, return values, state snapshots, latency, and SHA-256 step hashes to a local SQLite database using Write-Ahead Logging (WAL).
-- **Inspect**: Scrub through the execution timeline in a zero-dependency dark-mode web UI.
+- **Inspect**: Scrub through the execution timeline in a dark-mode web UI with zero frontend build dependencies (no npm, no node_modules, zero browser-side libraries).
 - **Modify**: Edit prompts, mock tool outputs, or tweak agent state at any step.
 - **Fork & Replay**: Fork execution at any step to re-execute with mutated arguments or state. **Prior steps are never re-executed**, saving their execution time and token costs.
 - **Diff**: Compare branches side-by-side with delta cost, delta latency, and unified output diffs.
@@ -112,7 +112,7 @@ flowchart LR
 5. **REPLAY**:
    - **Live Callable Replay**: If the step function is registered in the active Python session, Athar re-invokes the real callable with mutated arguments, measuring true output and latency.
    - **State Mutation Mode**: If inspecting offline or across process restarts, Athar records a state mutation snapshot branch for downstream inspection.
-   - **Semantic Branch Diff**: Compare the original and forked branches side-by-side with delta cost, delta latency, and unified text and JSON diffs.
+   - **Structured Branch Diff**: Compare the original and forked branches side-by-side with delta cost, delta latency, and unified text and JSON diffs.
    *(Note: Current releases re-execute the selected step; automated cascading replay across downstream steps is planned for v0.4).*
 
 ---
@@ -125,12 +125,19 @@ flowchart LR
 
 ### 1. Installation
 
-Install via PyPI:
+**Stable Release (PyPI)**:
 ```bash
 pip install athar
 ```
+*Installs the core tracing SDK (`@traced`, `TracerContext`), SQLite WAL store, and local debugger UI.*
 
-Or install from source for development:
+**Latest Development Build (GitHub `main`)**:
+To install the latest features (Structured Branch Diff, universal LangChain/LangGraph adapter, and trace/branch deletion):
+```bash
+pip install git+https://github.com/Abdur-Rafay-AR/athar.git
+```
+
+Or clone for local development:
 ```bash
 git clone https://github.com/Abdur-Rafay-AR/athar.git
 cd athar
@@ -289,14 +296,14 @@ flowchart TD
 - **Deterministic Step Fingerprinting**:
   - Computes a canonical SHA-256 hash over normalized inputs and outputs:
     $$\text{step\_hash} = \text{SHA256}(\text{canonical\_json}(\text{inputs}) \parallel \text{canonical\_json}(\text{outputs}))$$
-  - Enables deduplication, cache validation, and divergence detection.
+  - Provides an immutable content hash per step to detect payload divergence between baseline and replayed branches.
 - **Concurrent SQLite Storage (`athar.storage.sqlite_store`)**:
   - `PRAGMA journal_mode=WAL;`: Allows concurrent readers (such as the Web UI) to operate simultaneously without blocking or being blocked by writing operations. While SQLite serializes writes (one writer at a time), concurrent write requests are managed via a 10-second busy timeout.
   - `PRAGMA synchronous=NORMAL;`: Avoids costly fsync calls on every commit in WAL mode, significantly improving write throughput while ensuring structural database integrity across application crashes.
   - Thread-local connection management: Isolates SQLite connection objects per thread to prevent cross-thread handle sharing.
 - **Dynamic Replay Engine (`athar.core.replayer`, `athar.core.registry`)**:
   - Distinguishes between **Live Callable Replay** (active in-memory Python function re-invoked with mutated inputs) and **State Snapshot Forking** (offline inspection and annotation).
-- **Semantic Branch Diffing (`athar.core.diff`)**:
+- **Structured Branch Diffing (`athar.core.diff`)**:
   - Traverses the execution graph to detect fork points.
   - Computes exact cost differentials ($\Delta\text{cost} = \text{cost}_B - \text{cost}_A$) and latency differentials ($\Delta\text{latency} = \text{latency}_B - \text{latency}_A$).
   - Produces unified diffs of input and output payloads using standard `difflib`.
@@ -367,10 +374,10 @@ agent.run()
 | **Primary Focus** | **Local time-travel debugging & step replay** | Production tracing & evaluation | Open-source observability & metrics | LLM evaluation & trace analysis | Visual graph IDE & checkpoint time travel |
 | **Deployment Model** | **Local-first (embedded SQLite file)** | SaaS (Cloud) / Enterprise | Self-hosted (Docker) or Cloud | Local (`pip`) or Cloud | Desktop app (Docker / LangGraph CLI) |
 | **Debugger Telemetry** | **Zero telemetry from Athar** | Sends trace data to cloud | Stored in self-hosted or cloud DB | Stored locally in Phoenix DB or cloud | Local LangGraph server or cloud |
-| **State Mutation & Replay** | **UI step mutation + live Python re-execution** | Prompt playground re-run | Playground testing | Experiment evaluation runs | Checkpoint state editing & node re-runs |
-| **Prior Step Skipping** | **Replays target step directly (prior steps skipped)** | No | No | No | Resumes from checkpoint state |
-| **Semantic Branch Diff** | **Built-in ($\Delta\text{cost}$, $\Delta\text{latency}$, step diffs)** | Run comparison | Run comparison | Experiment comparison | State inspection per checkpoint |
-| **Infrastructure Overhead** | **`pip install athar` (0 config)** | API key & network | Docker (PostgreSQL + ClickHouse) | Local Python package (`arize-phoenix`) | Desktop App + Docker + LangGraph CLI |
+| **State Mutation & Replay** | **UI step mutation + live Python re-execution** | Prompt playground testing | Prompt playground testing | Experiment evaluation runs | Checkpoint state editing & node re-runs |
+| **Execution Target** | **Replays selected step (skips prior steps)** | Isolated prompt re-run | Isolated prompt re-run | Evaluation dataset run | Graph resumption from checkpoint |
+| **Structured Branch Diff** | **Built-in ($\Delta\text{cost}$, $\Delta\text{latency}$, step diffs)** | Run-to-run comparison | Trace-to-trace comparison | Experiment comparison | Per-checkpoint state inspection |
+| **Infrastructure Overhead** | **Python package (`fastapi`, `uvicorn`, `pydantic`); zero frontend build tools** | API key & network | Docker (PostgreSQL + ClickHouse) | Local Python package (`arize-phoenix`) | Desktop App + Docker + LangGraph CLI |
 
 ---
 
@@ -391,19 +398,21 @@ To maintain technical credibility, we document our current constraints honestly:
 
 ## Roadmap
 
-- [x] **v0.1.0 (Current Release)**:
+- [x] **v0.1.0 (PyPI Stable)**:
   - Local-first tracer SDK (`@traced`, `TracerContext`, contextvars call tree).
-  - SQLite WAL storage with trace and branch deletion management.
-  - Web UI debugger with interactive timeline, JSON state mutation editor, and live callable re-execution.
-  - Side-by-side semantic branch diff visualizer ($\Delta\text{cost}$, $\Delta\text{latency}$, and output diffs).
-  - Universal LangChain & LangGraph callback adapter (`AtharCallbackHandler`) and Crucible adapter (`CrucibleAdapter`).
-- [ ] **v0.2.0 (In Progress)**:
+  - SQLite WAL persistence with concurrent reader support.
+  - Baseline Web UI debugger with interactive timeline and "Seed Sample Trace" generator.
+  - Crucible multi-agent adapter (`CrucibleAdapter`).
+- [x] **v0.2.0-dev (Current GitHub `main` / Upcoming PyPI Release)**:
+  - Side-by-side Structured Branch Diff visualizer ($\Delta\text{cost}$, $\Delta\text{latency}$, and unified text/JSON diffs).
+  - Universal LangChain & LangGraph callback adapter (`AtharCallbackHandler`).
+  - Time-travel fork & replay runtime (`execute_replay`) with in-memory `FunctionRegistry`.
+  - Full trace and individual branch deletion controls in the Web UI and REST API.
+- [ ] **v0.3.0 (Planned)**:
   - CLI trace export utilities (`athar export` for formatted JSON and OpenTelemetry).
   - Timeline search and tag filtering in the Web UI.
-- [ ] **v0.3.0 (Planned)**:
-  - Live trace streaming via Server-Sent Events (SSE) / WebSockets.
-  - Native Microsoft AutoGen and CrewAI adapters.
 - [ ] **v0.4.0 (Planned)**:
+  - Live trace streaming via Server-Sent Events (SSE) / WebSockets.
   - Automated multi-step cascading replay engine across downstream dependencies.
   - Side-effect dry-run guard (`@traced(is_idempotent=False)`).
 
